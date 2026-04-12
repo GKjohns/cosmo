@@ -1,0 +1,146 @@
+title: Command Your [Fleet]{class="text-primary"} from Anywhere
+description: AEGIS is the next-generation fleet operations platform for coordinating deep-space missions, managing crew deployments, and maintaining real-time situational awareness across your entire armada.
+seo:
+  title: AEGIS - Fleet Command Operations Platform
+  description: Command your fleet with AEGIS. Real-time situational awareness, crew management, mission coordination, and tactical displays for modern space navy operations.
+navigation: false
+hero:
+  links:
+    - label: Access Command
+      icon: i-lucide-arrow-right
+      trailing: true
+      to: /app
+      size: xl
+    - label: Documentation
+      icon: i-lucide-book-open
+      size: xl
+      color: neutral
+      variant: subtle
+      to: /docs
+sections:
+  - title: Built for Fleet Operations
+    description: Real-time coordination tools designed for the demands of multi-sector fleet management. Monitor, command, and adapt — from a single operations console.
+    id: features
+    orientation: horizontal
+    features:
+      - name: Real-time Tracking
+        description: Monitor vessel positions, trajectories, and system status across every sector in your area of operations.
+        icon: i-lucide-radar
+      - name: Crew Management
+        description: Track personnel assignments, certifications, watch rotations, and deployment history across your entire fleet.
+        icon: i-lucide-users
+      - name: Secure Communications
+        description: End-to-end encrypted channels for fleet-wide coordination, from bridge-to-bridge hails to sector-wide broadcasts.
+        icon: i-lucide-lock
+  - title: Mission-Critical Reliability
+    description: When lives depend on your software, uptime isn't a feature — it's the baseline. AEGIS is built for the demands of continuous deep-space operations.
+    orientation: horizontal
+    reverse: true
+    features:
+      - name: Edge Processing
+        description: Distributed compute nodes ensure operational continuity even when primary relay stations go offline.
+        icon: i-lucide-zap
+      - name: Low-Light Displays
+        description: Optimized bridge displays with automatic ambient adaptation for extended watch shifts and combat readiness.
+        icon: i-lucide-moon
+      - name: Multi-Fleet Ops
+        description: Coordinate joint operations across allied fleet commands with shared tactical overlays and unified comms.
+        icon: i-lucide-globe
+features:
+  title: Everything You Need to Command
+  description: Purpose-built tools for fleet operations. No compromises, no unnecessary complexity — just the capabilities your command staff needs.
+  items:
+    - title: Tactical Displays
+      description: Holographic visualization of fleet positions, threat assessments, and navigational hazards updated in real time.
+      icon: i-lucide-monitor
+    - title: Secure by Design
+      description: Military-grade encryption with multi-factor biometric authentication and zero-trust architecture throughout.
+      icon: i-lucide-shield
+    - title: Command Console
+      description: Keyboard-driven interface with configurable shortcuts for rapid decision-making under pressure.
+      icon: i-lucide-terminal
+    - title: Sensor Integration
+      description: Aggregate and correlate data from radar, lidar, and deep-space telemetry arrays into a unified picture.
+      icon: i-lucide-satellite-dish
+    - title: Battle-Tested
+      description: Proven across 10,000+ simulated engagement scenarios with 99.99% uptime under sustained operational load.
+      icon: i-lucide-check-circle
+    - title: Fully Configurable
+      description: Customize dashboards, alert thresholds, and reporting hierarchies to match your command structure exactly.
+      icon: i-lucide-settings
+testimonials:
+  headline: Trusted by Fleet Commands
+  title: Proven Across Every Theater of Operations
+  description: From patrol corvettes to carrier battle groups, AEGIS scales to meet the demands of any mission profile.
+  items:
+    - quote: AEGIS transformed how we coordinate multi-sector patrols. Situational awareness went from hours-delayed to real-time overnight. Our response times dropped by 60%.
+      user:
+        name: Admiral R. Tanaka
+        description: Commander, 7th Expeditionary Fleet
+        avatar:
+          src: https://i.pravatar.cc/120?img=7
+    - quote: We deployed AEGIS across our entire escort squadron in 48 hours. The crew management module alone saved us hundreds of hours in personnel logistics.
+      user:
+        name: Captain S. Okonkwo
+        description: CO, Frigate Squadron 12
+        avatar:
+          src: https://i.pravatar.cc/120?img=3
+    - quote: The sensor integration layer is exceptional. We're pulling data from six different array types into one coherent tactical picture. Nothing else comes close.
+      user:
+        name: Lt. Commander J. Reeves
+        description: Tactical Officer, DSS Constellation
+        avatar:
+          src: https://i.pravatar.cc/120?img=11
+    - quote: Zero unplanned downtime in 14 months of continuous deep-space operations. When your nearest support is three light-hours away, that reliability matters.
+      user:
+        name: Commander L. Park
+        description: Ops Director, Orbital Station Kepler
+        avatar:
+          src: https://i.pravatar.cc/120?img=5
+    - quote: The low-light bridge displays are a game-changer for extended watch shifts. Our crew fatigue metrics improved across every vessel in the group.
+      user:
+        name: Fleet Surgeon M. Vasquez
+        description: Medical Corps, 3rd Fleet
+        avatar:
+          src: https://i.pravatar.cc/120?img=9
+    - quote: AEGIS gave us joint operations capability we didn't think was possible. Three allied fleets, one shared tactical overlay, zero coordination failures.
+      user:
+        name: Vice Admiral K. Andersen
+        description: NATO Deep Space Command
+        avatar:
+          src: https://i.pravatar.cc/120?img=8
+    - quote: The command console keyboard shortcuts let my tactical team operate at the speed of thought. In a contested environment, those seconds matter.
+      user:
+        name: Commander D. Chen
+        description: Bridge Commander, DSS Aegis Prime
+        avatar:
+          src: https://i.pravatar.cc/120?img=1
+    - quote: We evaluated five fleet management platforms. AEGIS was the only one that could handle our sensor data volume without degraded performance.
+      user:
+        name: Lt. N. Johansson
+        description: Signals Intelligence, Northern Sector Patrol
+        avatar:
+          src: https://i.pravatar.cc/120?img=12
+    - quote: Migrating from legacy systems was seamless. The AEGIS team understood our operational requirements and delivered exactly what we needed.
+      user:
+        name: Captain A. Petrov
+        description: Fleet Modernization Office
+        avatar:
+          src: https://i.pravatar.cc/120?img=10
+    - quote: The multi-fleet coordination tools turned a diplomatic exercise with eight nations into the smoothest joint operation I've ever been part of.
+      user:
+        name: Commodore H. Williams
+        description: Combined Fleet Operations
+        avatar:
+          src: https://i.pravatar.cc/120?img=14
+cta:
+  title: Ready to take command?
+  description: Join hundreds of fleet commands already using AEGIS to coordinate their operations. Request access and deploy within 48 hours.
+  links:
+    - label: Request access
+      to: '/signup'
+      trailingIcon: i-lucide-arrow-right
+    - label: View documentation
+      to: '/docs'
+      variant: subtle
+      icon: i-lucide-book-open

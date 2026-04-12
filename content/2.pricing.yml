@@ -1,0 +1,82 @@
+title: A tier for every fleet
+description: From single-vessel patrols to full battle group operations. Choose the tier that matches your command scope.
+seo:
+  title: Pricing
+  description: Choose the AEGIS tier that matches your fleet operations requirements.
+navigation.icon: i-lucide-credit-card
+plans:
+  - title: Scout
+    description: For patrol groups and small detachments.
+    price:
+      month: $29
+      year: $290
+    button:
+      label: Get Started
+      color: neutral
+      variant: subtle
+    features:
+      - Up to 5 vessels
+      - 10 crew profiles
+      - Basic sensor integration
+      - Standard comms
+      - Single sector coverage
+      - Community support
+      - 7-day data retention
+  - title: Squadron
+    description: For escort squadrons and task forces.
+    price:
+      month: $99
+      year: $990
+    highlight: true
+    scale: true
+    button:
+      label: Get Started
+    features:
+      - Up to 50 vessels
+      - 500 crew profiles
+      - Advanced sensor suite
+      - Encrypted comms
+      - Multi-sector coverage
+      - Priority support
+      - 90-day data retention
+  - title: Fleet
+    description: For full fleet command operations.
+    price:
+      month: $299
+      year: $2,990
+    button:
+      label: Get Started
+      color: neutral
+      variant: subtle
+    features:
+      - Unlimited vessels
+      - Unlimited crew profiles
+      - Full sensor integration
+      - Quantum-encrypted comms
+      - All-sector coverage
+      - 24/7 command support
+      - Unlimited data retention
+logos:
+  title: Trusted by allied commands
+  icons:
+    - i-simple-icons-amazonaws
+    - i-simple-icons-docker
+    - i-simple-icons-kubernetes
+    - i-simple-icons-grafana
+    - i-simple-icons-cloudflare
+faq:
+  title: Frequently asked questions
+  description: Common questions about AEGIS deployment, capabilities, and support.
+  items:
+    - label: What security certifications does AEGIS hold?
+      content: AEGIS is built on a zero-trust architecture with end-to-end encryption for all data in transit and at rest. We maintain compliance with all major fleet security frameworks and undergo continuous third-party auditing.
+    - label: How quickly can we deploy AEGIS?
+      content: Most fleet commands are fully operational within 48 hours. Our deployment team handles integration with your existing sensor arrays and communications infrastructure.
+    - label: Can we run AEGIS in air-gapped environments?
+      content: Yes. AEGIS supports fully air-gapped deployments with local-only data processing. Edge nodes can operate independently and sync when connectivity is restored.
+    - label: Can we upgrade or downgrade our tier?
+      content: Tier changes take effect immediately. Upgrades unlock additional capabilities instantly, and downgrades are prorated for the remaining billing period.
+    - label: What happens if we exceed our vessel limit?
+      content: You'll receive a notification when approaching your tier limit. Additional vessels can be added at a per-unit rate, or you can upgrade to the next tier for better value.
+    - label: Do you offer training for command staff?
+      content: Every tier includes access to our self-service training modules. Squadron and Fleet tiers include live training sessions with our operations specialists.

@@ -1,0 +1,30 @@
+<template>
+  <div class="flex items-center gap-2">
+    <svg
+      viewBox="0 0 24 28"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-full w-auto shrink-0"
+    >
+      <defs>
+        <mask id="aegis-mark">
+          <rect width="24" height="28" fill="white" />
+          <polyline
+            points="8,19 12,13 16,19"
+            stroke="black"
+            stroke-width="2.5"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </mask>
+      </defs>
+      <path
+        d="M12 1 L23 6 L23 16 C23 22 18 26 12 27 C6 26 1 22 1 16 L1 6 Z"
+        fill="currentColor"
+        mask="url(#aegis-mark)"
+      />
+    </svg>
+    <span class="font-semibold tracking-[0.2em] text-sm uppercase">Aegis</span>
+  </div>
+</template>
