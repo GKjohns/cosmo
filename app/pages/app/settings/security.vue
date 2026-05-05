@@ -2,6 +2,9 @@
 import * as z from 'zod'
 import type { FormError } from '@nuxt/ui'
 
+const user = useSupabaseUser()
+const { email } = useProfile()
+
 const passwordSchema = z.object({
   current: z.string().min(8, 'Must be at least 8 characters'),
   new: z.string().min(8, 'Must be at least 8 characters')
@@ -21,9 +24,21 @@ const validate = (state: Partial<PasswordSchema>): FormError[] => {
   }
   return errors
 }
+
+const accountEmail = computed(() => email.value || user.value?.email || 'unknown')
 </script>
 
 <template>
+  <UPageCard
+    title="Sign-in email"
+    description="The email associated with your account."
+    variant="subtle"
+  >
+    <p class="text-sm text-highlighted font-mono">
+      {{ accountEmail }}
+    </p>
+  </UPageCard>
+
   <UPageCard
     title="Password"
     description="Confirm your current password before setting a new one."

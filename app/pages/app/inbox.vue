@@ -1,3 +1,4 @@
+<!-- Demo scaffold — replace with project-specific page or delete. -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { breakpointsTailwind } from '@vueuse/core'

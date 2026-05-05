@@ -1,3 +1,4 @@
+<!-- Demo scaffold — replace with project-specific page or delete. -->
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import { upperFirst } from 'scule'

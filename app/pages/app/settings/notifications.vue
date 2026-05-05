@@ -21,7 +21,7 @@ const sections = [{
   }]
 }, {
   title: 'Account updates',
-  description: 'Receive updates about AEGIS.',
+  description: 'Receive product updates from your workspace.',
   fields: [{
     name: 'weekly_digest',
     label: 'Weekly digest',

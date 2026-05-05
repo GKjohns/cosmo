@@ -1,24 +1,23 @@
 <script setup lang="ts">
 const colorMode = useColorMode()
 
-const color = computed(() => colorMode.value === 'dark' ? '#020618' : 'white')
+// Theme color tracks the brand bg in light mode, the slate-950 chrome in dark.
+const themeColor = computed(() => colorMode.value === 'dark' ? '#09090B' : '#FFFFFF')
+// Loading indicator picks up the accent so it stays visible against either bg.
+const loadingIndicatorColor = computed(() => colorMode.value === 'dark' ? '#E2E8F0' : '#0F172A')
 
 useHead({
   meta: [
-    { charset: 'utf-8' },
-    { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-    { key: 'theme-color', name: 'theme-color', content: color }
-  ],
-  link: [
-    { rel: 'icon', href: '/favicon.ico' }
-  ],
-  htmlAttrs: {
-    lang: 'en'
-  }
+    { key: 'theme-color', name: 'theme-color', content: themeColor }
+  ]
 })
 
 useSeoMeta({
-  titleTemplate: '%s - AEGIS',
+  // Smart title append: bare "Cosmo" stays as-is; everything else gets " | Cosmo".
+  titleTemplate: (titleChunk?: string) => {
+    if (!titleChunk || titleChunk === 'Cosmo') return 'Cosmo'
+    return titleChunk.includes('Cosmo') ? titleChunk : `${titleChunk} | Cosmo`
+  },
   twitterCard: 'summary_large_image'
 })
 
@@ -45,6 +44,10 @@ const links = [{
   label: 'Changelog',
   icon: 'i-lucide-history',
   to: '/changelog'
+}, {
+  label: 'Help',
+  icon: 'i-lucide-life-buoy',
+  to: '/help'
 }]
 
 provide('navigation', navigation)
@@ -52,7 +55,7 @@ provide('navigation', navigation)
 
 <template>
   <UApp>
-    <NuxtLoadingIndicator />
+    <NuxtLoadingIndicator :color="loadingIndicatorColor" />
 
     <NuxtLayout>
       <NuxtPage />

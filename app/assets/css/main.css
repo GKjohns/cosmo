@@ -3,42 +3,117 @@
 
 @source "../../../content/**/*";
 
+/*
+ * Cosmo design-token cascade.
+ *
+ * Layered like Daylight's:
+ *   1. Brand tokens (`--bg`, `--ink`, `--accent`, `--rule`, `--card`, fonts)
+ *      — referenced by page-level CSS via `var(--bg)` etc.
+ *   2. Nuxt UI 4 surface overrides — every `UButton` / `UCard` /
+ *      `UNavigationMenu` inherits.
+ *   3. Primary palette — generic slate, scaled for hover/focus/disabled.
+ *   4. `.dark` overrides for the same keys.
+ *
+ * Cosmo defaults to slate (matches `app/app.config.ts`'s `colors.primary`).
+ * Projects can swap by editing the `--ui-color-primary-*` block; the brand
+ * tokens above stay generic so the chrome doesn't have to change with the
+ * accent.
+ *
+ * Fonts use the system stack — no Charter (Daylight-specific). Projects that
+ * want a serif display face can add it to `--font-display` / `--font-body`
+ * without touching the rest.
+ */
+
 @theme static {
-  --font-sans: 'Public Sans', sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
 }
 
 :root {
-  --ui-primary: #09090b;
-  --ui-border: #e4e4e7;
-  --ui-border-muted: #f4f4f5;
-  --ui-border-accented: #d4d4d8;
-  --ui-text: #3f3f46;
-  --ui-text-highlighted: #09090b;
-  --ui-text-muted: #71717a;
-  --ui-text-dimmed: #a1a1aa;
+  /* Brand tokens */
+  --bg: #FFFFFF;
+  --bg-elevated: #F4F4F5;
+  --ink: #09090B;
+  --ink-soft: #3F3F46;
+  --ink-muted: #71717A;
+  --accent: #0F172A; /* slate-900 */
+  --accent-soft: #1E293B; /* slate-800 */
+  --rule: #E4E4E7;
+  --card: #FFFFFF;
+
+  /* Font tokens */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Roboto Mono', monospace;
+
+  /* Nuxt UI 4 surface overrides — every UButton/UCard/UNavigationMenu inherits */
+  --ui-bg: var(--bg);
+  --ui-bg-muted: var(--bg-elevated);
+  --ui-bg-elevated: var(--bg-elevated);
+  --ui-bg-accented: var(--card);
+  --ui-text: var(--ink-soft);
+  --ui-text-highlighted: var(--ink);
+  --ui-text-toned: var(--ink-soft);
+  --ui-text-muted: var(--ink-muted);
+  --ui-text-dimmed: var(--ink-muted);
+  --ui-border: var(--rule);
+  --ui-border-muted: var(--rule);
+  --ui-border-accented: #D4D4D8;
+  --ui-radius: 6px;
+
+  /* Primary palette — slate, scaled for hover/focus/disabled */
+  --ui-color-primary-50:  #F8FAFC;
+  --ui-color-primary-100: #F1F5F9;
+  --ui-color-primary-200: #E2E8F0;
+  --ui-color-primary-300: #CBD5E1;
+  --ui-color-primary-400: #94A3B8;
+  --ui-color-primary-500: #64748B;
+  --ui-color-primary-600: #475569;
+  --ui-color-primary-700: #334155;
+  --ui-color-primary-800: #1E293B;
+  --ui-color-primary-900: #0F172A;
+  --ui-color-primary-950: #020617;
 }
 
 .dark {
-  --ui-primary: #fafafa;
-  --ui-bg: #09090b;
-  --ui-bg-muted: #111113;
-  --ui-bg-elevated: #151517;
-  --ui-bg-accented: #1c1c1f;
-  --ui-border: #1c1c1f;
+  --bg: #09090B;
+  --bg-elevated: #111113;
+  --ink: #FAFAFA;
+  --ink-soft: #C4C4C9;
+  --ink-muted: #8C8C94;
+  --accent: #E2E8F0; /* slate-200 in dark mode */
+  --accent-soft: #CBD5E1;
+  --rule: #1C1C1F;
+  --card: #151517;
+
+  --ui-bg: var(--bg);
+  --ui-bg-muted: var(--bg-elevated);
+  --ui-bg-elevated: var(--bg-elevated);
+  --ui-bg-accented: var(--card);
+  --ui-text: var(--ink-soft);
+  --ui-text-highlighted: var(--ink);
+  --ui-text-toned: var(--ink-soft);
+  --ui-text-muted: var(--ink-muted);
+  --ui-text-dimmed: #5C5C66;
+  --ui-border: var(--rule);
   --ui-border-muted: #141416;
   --ui-border-accented: #222225;
-  --ui-text: #c4c4c9;
-  --ui-text-highlighted: #fafafa;
-  --ui-text-muted: #8c8c94;
-  --ui-text-dimmed: #5c5c66;
+
+  /* Slate palette flipped for dark mode — hover/focus pull lighter, not darker */
+  --ui-color-primary-300: #CBD5E1;
+  --ui-color-primary-400: #94A3B8;
+  --ui-color-primary-500: #64748B;
+  --ui-color-primary-600: #94A3B8;
+  --ui-color-primary-700: #CBD5E1;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
 }
 
 ::selection {
-  background-color: #d4d4d8;
-  color: #09090b;
-}
-
-.dark ::selection {
-  background-color: #3f3f46;
-  color: #fafafa;
+  background-color: var(--accent);
+  color: var(--bg);
 }

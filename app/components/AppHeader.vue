@@ -37,7 +37,7 @@ const items = computed(() => [{
         icon="i-lucide-log-in"
         color="neutral"
         variant="ghost"
-        to="/login"
+        to="/auth/login"
         class="lg:hidden"
       />
 
@@ -45,7 +45,7 @@ const items = computed(() => [{
         label="Sign in"
         color="neutral"
         variant="outline"
-        to="/login"
+        to="/auth/login"
         class="hidden lg:inline-flex"
       />
 
@@ -54,7 +54,7 @@ const items = computed(() => [{
         color="neutral"
         trailing-icon="i-lucide-arrow-right"
         class="hidden lg:inline-flex"
-        to="/signup"
+        to="/auth/signup"
       />
     </template>
 
@@ -71,14 +71,14 @@ const items = computed(() => [{
         label="Sign in"
         color="neutral"
         variant="subtle"
-        to="/login"
+        to="/auth/login"
         block
         class="mb-3"
       />
       <UButton
         label="Request access"
         color="neutral"
-        to="/signup"
+        to="/auth/signup"
         block
       />
     </template>

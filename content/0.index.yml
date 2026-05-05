@@ -1,8 +1,8 @@
 title: Command Your [Fleet]{class="text-primary"} from Anywhere
 description: AEGIS is the next-generation fleet operations platform for coordinating deep-space missions, managing crew deployments, and maintaining real-time situational awareness across your entire armada.
 seo:
-  title: AEGIS - Fleet Command Operations Platform
-  description: Command your fleet with AEGIS. Real-time situational awareness, crew management, mission coordination, and tactical displays for modern space navy operations.
+  title: Cosmo — Nuxt 4 + Supabase + Inngest starter
+  description: Cosmo is the Monument Labs starter — Nuxt 4, Supabase, Inngest. Clone it to bootstrap a new project with auth, multi-tenant orgs, billing, and AI chat already wired.
 navigation: false
 hero:
   links:

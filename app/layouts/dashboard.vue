@@ -1,95 +1,34 @@
 <script setup lang="ts">
-import type { NavigationMenuItem } from '@nuxt/ui'
-
-const route = useRoute()
-
 const open = ref(false)
+const { mainNav, commandGroups } = useNavigation()
+const { needsOnboarding } = useOrganization()
 
-const links = [[{
-  label: 'Command',
-  icon: 'i-lucide-layout-dashboard',
-  to: '/app',
-  onSelect: () => {
-    open.value = false
+// Bounce users with zero org memberships to onboarding when they enter
+// the dashboard layout. Server-side, the watcher fires only after the
+// org-context fetch resolves.
+watch(needsOnboarding, (value) => {
+  if (value && import.meta.client) {
+    navigateTo('/onboarding')
   }
-}, {
-  label: 'Comms',
-  icon: 'i-lucide-radio',
-  to: '/app/inbox',
-  badge: '4',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Personnel',
-  icon: 'i-lucide-users',
-  to: '/app/customers',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'AI Ops',
-  icon: 'i-lucide-sparkles',
-  to: '/app/ai',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Editor',
-  icon: 'i-lucide-file-text',
-  to: '/app/editor',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Settings',
-  to: '/app/settings',
-  icon: 'i-lucide-settings',
-  defaultOpen: true,
-  type: 'trigger',
-  children: [{
-    label: 'General',
-    to: '/app/settings',
-    exact: true,
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Members',
-    to: '/app/settings/members',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Notifications',
-    to: '/app/settings/notifications',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Security',
-    to: '/app/settings/security',
-    onSelect: () => {
-      open.value = false
-    }
-  }]
-}], [{
+}, { immediate: true })
+
+// Demo links (Inbox/Customers) intentionally not surfaced — see Sprint 1.1.
+const supportLinks = computed(() => [{
   label: 'Docs',
   icon: 'i-lucide-book',
   to: '/docs/getting-started',
   target: '_blank'
 }, {
-  label: 'Fleet Dispatch',
+  label: 'Blog',
   icon: 'i-lucide-pencil',
   to: '/blog',
   target: '_blank'
-}]] satisfies NavigationMenuItem[][]
-
-const groups = computed(() => [{
-  id: 'links',
-  label: 'Navigate',
-  items: links.flat()
 }])
+
+const navItems = computed(() => mainNav.value.map(item => ({
+  ...item,
+  onSelect: () => { open.value = false }
+})))
 </script>
 
 <template>
@@ -111,7 +50,7 @@ const groups = computed(() => [{
 
         <UNavigationMenu
           :collapsed="collapsed"
-          :items="links[0]"
+          :items="navItems"
           orientation="vertical"
           tooltip
           popover
@@ -119,7 +58,7 @@ const groups = computed(() => [{
 
         <UNavigationMenu
           :collapsed="collapsed"
-          :items="links[1]"
+          :items="supportLinks"
           orientation="vertical"
           tooltip
           class="mt-auto"
@@ -131,7 +70,7 @@ const groups = computed(() => [{
       </template>
     </UDashboardSidebar>
 
-    <UDashboardSearch :groups="groups" />
+    <UDashboardSearch :groups="commandGroups" />
 
     <slot />
 

@@ -90,7 +90,7 @@ function onSubmit() {
 
     <template #left>
       <p class="text-muted text-sm">
-        AEGIS Fleet Operations &copy; {{ new Date().getFullYear() }}
+        Cosmo &copy; {{ new Date().getFullYear() }}
       </p>
     </template>
 

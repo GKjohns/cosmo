@@ -25,6 +25,6 @@
         mask="url(#aegis-mark)"
       />
     </svg>
-    <span class="font-semibold tracking-[0.2em] text-sm uppercase">Aegis</span>
+    <span class="font-semibold tracking-[0.2em] text-sm uppercase">Cosmo</span>
   </div>
 </template>

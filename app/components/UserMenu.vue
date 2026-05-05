@@ -7,31 +7,39 @@ defineProps<{
 
 const colorMode = useColorMode()
 const appConfig = useAppConfig()
+const supabase = useSupabaseClient()
+const router = useRouter()
+const { displayName, avatarUrl, email, initial } = useProfile()
 
-const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
+const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose', 'slate']
 const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone']
 
-const user = ref({
-  name: 'A. Shepard',
-  avatar: {
-    alt: 'A. Shepard'
-  }
-})
+const userAvatar = computed(() => ({
+  src: avatarUrl.value || undefined,
+  alt: displayName.value,
+  text: avatarUrl.value ? undefined : initial.value
+}))
+
+async function logOut() {
+  await supabase.auth.signOut()
+  await router.push('/')
+}
 
 const items = computed<DropdownMenuItem[][]>(() => ([[{
   type: 'label',
-  label: user.value.name,
-  avatar: user.value.avatar
+  label: displayName.value,
+  avatar: userAvatar.value
 }], [{
   label: 'Profile',
-  icon: 'i-lucide-user'
+  icon: 'i-lucide-user',
+  to: '/app/settings'
 }, {
   label: 'Billing',
   icon: 'i-lucide-credit-card'
 }, {
   label: 'Settings',
   icon: 'i-lucide-settings',
-  to: '/settings'
+  to: '/app/settings'
 }], [{
   label: 'Theme',
   icon: 'i-lucide-palette',
@@ -49,7 +57,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       slot: 'chip',
       checked: appConfig.ui.colors.primary === color,
       type: 'checkbox',
-      onSelect: (e) => {
+      onSelect: (e: Event) => {
         e.preventDefault()
 
         appConfig.ui.colors.primary = color
@@ -69,7 +77,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       slot: 'chip',
       type: 'checkbox',
       checked: appConfig.ui.colors.neutral === color,
-      onSelect: (e) => {
+      onSelect: (e: Event) => {
         e.preventDefault()
 
         appConfig.ui.colors.neutral = color
@@ -110,7 +118,11 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   target: '_blank'
 }, {
   label: 'Log out',
-  icon: 'i-lucide-log-out'
+  icon: 'i-lucide-log-out',
+  onSelect: (e: Event) => {
+    e.preventDefault()
+    logOut()
+  }
 }]]))
 </script>
 
@@ -121,11 +133,9 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
     :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }"
   >
     <UButton
-      v-bind="{
-        ...user,
-        label: collapsed ? undefined : user?.name,
-        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
-      }"
+      :avatar="userAvatar"
+      :label="collapsed ? undefined : (displayName || email)"
+      :trailing-icon="collapsed ? undefined : 'i-lucide-chevrons-up-down'"
       color="neutral"
       variant="ghost"
       block

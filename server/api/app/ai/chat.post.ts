@@ -8,46 +8,68 @@ import {
   streamText
 } from 'ai'
 import { createOpenAI } from '@ai-sdk/openai'
+import { serverSupabaseClient } from '#supabase/server'
 
 /**
  * Interactive AI chat endpoint — System 1 (Vercel AI SDK).
  * Streams responses with tool calling + reasoning display.
+ *
+ * Model id is sourced from the central registry (`server/utils/aiModels.ts`)
+ * so a project can flip providers via one edit + an `AI_GATEWAY_API_KEY`.
+ * When AI_GATEWAY_API_KEY is set the SDK auto-routes the gateway-style id;
+ * otherwise we fall back to the OpenAI provider for the openai/* prefix.
  */
 
-const ALLOWED_MODELS = ['gpt-5-nano', 'gpt-5-mini', 'gpt-5.4'] as const
-const DEFAULT_MODEL = 'gpt-5-mini'
-const REASONING_MODELS = new Set<string>(['gpt-5-mini', 'gpt-5.4'])
+const REASONING_MODELS = new Set<string>([
+  'openai/gpt-5-mini',
+  'openai/gpt-5',
+  'openai/gpt-5.4',
+  'openai/gpt-5.4-mini'
+])
 
 export default defineEventHandler(async (event) => {
+  const supabase = await serverSupabaseClient(event)
+  const userId = await requireUserId(event, supabase)
+
   const body = await readBody<{
     messages?: UIMessage[]
     model?: string
   }>(event)
 
   const messages = Array.isArray(body?.messages) ? body.messages : []
-  const requestedModel = ALLOWED_MODELS.includes(body?.model as typeof ALLOWED_MODELS[number])
-    ? body!.model!
-    : DEFAULT_MODEL
+  // Allow callers to override the registry default with another id from the
+  // registry. Anything not in the registry falls back to default-chat.
+  const requestedModel = body?.model && Object.values(MODELS).includes(body.model as typeof MODELS[keyof typeof MODELS])
+    ? body.model
+    : MODELS['default-chat']
 
   if (!messages.length) {
     throw createError({ statusCode: 400, statusMessage: 'At least one message is required.' })
   }
 
   const runtimeConfig = useRuntimeConfig(event)
+  const hasGateway = !!(runtimeConfig.aiGatewayApiKey || process.env.AI_GATEWAY_API_KEY)
 
-  if (!runtimeConfig.openaiApiKey) {
-    throw createError({ statusCode: 500, statusMessage: 'OpenAI API key is not configured.' })
+  if (!hasGateway && !runtimeConfig.openaiApiKey) {
+    throw createError({ statusCode: 500, statusMessage: 'No AI provider configured (OPENAI_API_KEY or AI_GATEWAY_API_KEY).' })
   }
 
-  const openai = createOpenAI({ apiKey: runtimeConfig.openaiApiKey })
+  // When the gateway is active, AI SDK v6 picks up the model id directly.
+  // Otherwise, strip the `openai/` prefix and call the OpenAI provider.
+  const model = hasGateway
+    ? requestedModel
+    : (() => {
+        const openai = createOpenAI({ apiKey: runtimeConfig.openaiApiKey as string })
+        const id = requestedModel.replace(/^openai\//, '')
+        return openai(id)
+      })()
 
-  // TODO: Wire up requireAppUser + createAITools with real Supabase org context
-  // const appUser = await requireAppUser(event)
-  // const supabase = serverSupabaseAdmin()
-  // const tools = createAITools({ supabase, organizationId: appUser.organizationId })
+  // Sprint 2 will wire org-scoped tools off `userId` + the user's current
+  // organization. For now the chat endpoint just streams from the model.
+  void userId
 
   const result = streamText({
-    model: openai(requestedModel),
+    model,
     system: buildAISystemPrompt({
       currentUser: {
         name: null,
