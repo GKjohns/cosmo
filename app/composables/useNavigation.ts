@@ -1,5 +1,11 @@
 import type { CommandPaletteGroup, NavigationMenuItem } from '@nuxt/ui'
 
+interface ChatNavItem {
+  id: string
+  title: string
+  updatedAt: string
+}
+
 /**
  * Single source of truth for the dashboard sidebar (`mainNav`) and the
  * `UDashboardSearch` command palette (`commandGroups`).
@@ -7,10 +13,33 @@ import type { CommandPaletteGroup, NavigationMenuItem } from '@nuxt/ui'
  * Keeping these together avoids drift between the two and makes "add a route"
  * a one-file change. Projects extend by adding entries here; per-page navs
  * (e.g. settings tabs) live in their own pages.
+ *
+ * The `chats` nav children are dynamic (Sprint 6): they refresh whenever
+ * a chat is created (`refreshNuxtData('chats')`) so the sidebar stays in
+ * sync with the live chat list.
  */
 export function useNavigation() {
   const route = useRoute()
   const { isEmployee } = useProfile()
+
+  // Recent chats — only fetched when authed; useFetch picks up the cookie.
+  // The `key: 'chats'` lets the empty-state page call
+  // `refreshNuxtData('chats')` after creating a new chat.
+  const { data: chats } = useFetch<ChatNavItem[]>('/api/chats', {
+    key: 'chats',
+    default: () => [],
+    server: false,
+    lazy: true
+  })
+
+  const recentChatChildren = computed<NavigationMenuItem[]>(() => {
+    return (chats.value ?? []).slice(0, 8).map(c => ({
+      label: c.title?.trim() || 'New chat',
+      icon: 'i-lucide-message-circle',
+      to: `/app/chat/${c.id}`,
+      active: route.path === `/app/chat/${c.id}`
+    }))
+  })
 
   const mainNav = computed<NavigationMenuItem[]>(() => {
     const items: NavigationMenuItem[] = [
@@ -29,8 +58,10 @@ export function useNavigation() {
       {
         label: 'AI',
         icon: 'i-lucide-sparkles',
-        to: '/app/ai',
-        active: route.path.startsWith('/app/ai')
+        to: '/app/chat',
+        active: route.path.startsWith('/app/chat') || route.path.startsWith('/app/ai'),
+        defaultOpen: route.path.startsWith('/app/chat'),
+        children: recentChatChildren.value.length > 0 ? recentChatChildren.value : undefined
       },
       {
         label: 'Editor',

@@ -3,14 +3,24 @@ import * as z from 'zod'
 
 /**
  * AI tools for System 1 (Vercel AI SDK streaming chat).
- * Each tool queries Supabase and returns structured data.
- * Adapt these to your domain.
+ * Each tool queries Supabase and returns structured data scoped to the
+ * caller's active organization.
+ *
+ * TODO: project-specific tool registration. Cosmo ships generic tools
+ * (`list_items`, `get_dashboard_stats`) tied to the example `items` table.
+ * Per-project, extend this factory with domain-specific tools (e.g.
+ * Daylight's custody-event search, AIR-Bot's artifact lookup) rather than
+ * forking the file. Per-tool icon/label rendering lives in
+ * `app/components/chat/MessageContent.vue`'s switch.
  */
 export function createAITools(params: {
   supabase: ReturnType<typeof serverSupabaseAdmin>
   organizationId: string
+  userId?: string
 }) {
   const { supabase, organizationId } = params
+  // userId is reserved for tools that need creator-attributed lookups.
+  void params.userId
 
   return {
     list_items: tool({

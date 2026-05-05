@@ -1,7 +1,7 @@
 # Cosmo Uplift — Implementation Plan
 
 **Created:** May 5, 2026
-**Status:** In progress — 5 of 6 sprints complete (Sprints 1–5 ✅, Sprint 6 pending)
+**Status:** 6 of 6 sprints complete (all sprints ✅)
 **Branch:** `cosmo-uplift` (not merged to main; not pushed)
 **Context:** Cosmo is the "batteries-included" Nuxt 4 + Supabase + Inngest starter that every Monument Labs project clones from. It has shipped a lot of demo chrome but the actual batteries — auth, real data, email, billing, analytics, admin — are missing or fake. Daylight, Margin, ARIA, and AIR-Bot have each matured pieces that should now be promoted back into the starter so future projects begin where current projects ended up, not where they started.
 
@@ -11,16 +11,16 @@
 
 Picking this up in a fresh Claude session? Read this first.
 
-**Done (Sprints 1–5):**
+**Done (Sprints 1–6):**
 - Real Supabase auth: `@nuxtjs/supabase` with `redirect: false` + Daylight's `auth.global.ts` middleware. Auth pages at `app/pages/auth/{login,signup,confirm}.vue`. Server-side `requireUserId` in `server/utils/auth.ts`.
 - Multi-tenancy: ARIA's `useOrganization` + `useNavigation` + `TeamsMenu` + onboarding + invitations + settings/{profile,members}. Migration `002_orgs_and_invitations.sql` adds `is_employee`/`is_test_user`/`timezone`/`avatar_url`/`display_name` to `profiles`.
 - Platform utils: Resend wrapper (`server/utils/email.ts`) with dedupe + dev-gate; analytics events pipeline (`analytics` schema, `log_event` SECURITY DEFINER, `analytics_reader` role); `server/utils/aiModels.ts` registry; design-token CSS; `app/error.vue`; `app/pages/help.vue`. Migrations `003_email_sends.sql` + `004_analytics.sql`.
 - Admin + ops: `/app/admin` (chartless KPI/funnel/feedback/activity), `/app/dev-tools` (probes + test-user CRUD + send-test-email), `app/middleware/employee.ts` (404, not redirect), `requireEmployee` helper, `FeedbackForm.vue` + migration `005_feedback.sql`. `[Internal]` nav group surfaces when `isEmployee`.
 - Billing scaffold — stub-by-default. `server/utils/billing.ts` with `isStripeConfigured()` switch; `server/utils/subscription.ts` with `getUserTier` + quota gates. Endpoints `server/api/stripe/{create-checkout-session,create-portal-session,webhook}.post.ts` lazy-import the `stripe` SDK only inside the live branch. `useSubscription` / `usePlans` composables, `/app/billing` page (with employee tier-switcher), `UpgradePrompt` / `UsageDashboard` / `UsageHint` / `EmbeddedCheckout` components. Migrations `006_subscriptions.sql` (subscriptions table + plan-sync trigger) + `007_usage_tracking.sql` (plan_limits, usage_summaries, helper RPCs, item-counter trigger). `profiles.test_tier` powers the employee tier-switcher in stub mode.
 
-**Next up (Sprint 6):** Chat upgrade. **Mirror <https://github.com/nuxt-ui-templates/chat/tree/main/>** as the canonical reference (it's the stablest implementation). Cross-reference AIR-Bot's `MessageContent.vue` for parts-renderer details. **Watch the empty-state → uuid transition** — see Sprint 6's intro note about race conditions and double-submit protection. Drops cosmo's unused `ai_conversations`/`ai_messages` tables in a new migration (`008_chats.sql`); creates a flatter `chats` table with `messages jsonb`.
+**Sprint 6 (chat upgrade):** complete. Migration `008_chats.sql` (drops legacy `ai_conversations`/`ai_messages`, adds flat `chats` with `messages jsonb` + RLS), `server/api/chats.{get,post}.ts` + `server/api/chats/[id].{get,post,delete}.ts` (the POST id-diffs new messages on `onFinish` so re-emitted parts don't duplicate), `server/utils/chats.ts` (`normalizeMessages` / `serializeMessages` / `extractTextFromParts`), `app/components/chat/MessageContent.vue` (ported from AIR-Bot — `UChatReasoning` + `UChatTool` + `UEditor`-rendered markdown), `app/pages/app/chat/{index,[id]}.vue` with the `[view-transition-name:chat-prompt]` empty-state→uuid handoff, `useNavigation` updated to dynamically inject recent chats. `ai-tools.ts` switch wired with TODO comments for project-specific tool registration. Old `app/pages/app/ai.vue` reduced to a `redirect: '/app/chat'` page.
 
-**Pre-existing typecheck errors (do not own):** `app/components/home/{HomeSales,HomeStats}.vue`, `app/components/editor/{CollaborationUsers,ImageUploadNode}.vue`, `app/composables/useEditorMentions.ts`, `app/pages/app/ai.vue`. The last one (`ai.vue`) is replaced wholesale in Sprint 6; the rest are dashboard demo + editor scaffolding that get cleaned up only when a project picks them up.
+**Pre-existing typecheck errors (do not own):** `app/components/home/{HomeSales,HomeStats}.vue`, `app/components/editor/{CollaborationUsers,ImageUploadNode}.vue`, `app/composables/useEditorMentions.ts`. (Sprint 6 cleared the four `app/pages/app/ai.vue` errors by replacing the file.) The remainder are dashboard demo + editor scaffolding that get cleaned up only when a project picks them up.
 
 **No commits during handoff.** All sprint work is committed locally on `cosmo-uplift` (one commit per sprint, plus a hygiene commit). Nothing pushed. Kyle's pre-existing AEGIS demo work (modified `.gitignore`, `index.vue`, AEGIS-themed blog posts, `AsciiHero.vue`) is carried forward as part of Sprint 1's hygiene commit — that was intentional, those are demo-content choices Kyle made before this plan started.
 
@@ -385,7 +385,7 @@ The plan is six sprints. Each sprint is self-contained, ends with verification s
 
 ---
 
-### Sprint 5: Billing scaffold (stub-by-default, real Stripe when keys set) — [Complete]
+### Sprint 5: Billing scaffold (stub-by-default, real Stripe when keys set) — [Complete] — [Complete]
 **Goal:** A new project ships with the *shape* of a billing flow — `subscriptions` table, `useSubscription`, billing page, webhook endpoint, plan-limits, `UpgradePrompt` — but cosmo boots and runs with **no Stripe keys configured**, returning canned tier data and stubbed checkout responses. Projects flip to live Stripe by setting env vars; nothing else changes.
 **Estimated effort:** 4–5 hours
 
@@ -396,7 +396,7 @@ The plan is six sprints. Each sprint is self-contained, ends with verification s
 - **Subscriptions are scoped to organizations, not users.** Margin's subscriptions row carries `organization_id`; Daylight's carries `user_id`. Cosmo follows Margin because the multi-tenancy model from Sprint 2 is org-first — a user upgrades the active org's plan, not a personal plan. Per-user billing would have re-litigated Sprint 2 RLS for no architectural gain.
 - **Embedded Checkout uses a *lazy* `await import('@stripe/stripe-js')`** and falls back to the demo banner if the dep is missing. We do *not* ship `@stripe/stripe-js` as a cosmo dep — projects that flip to live install it explicitly. This keeps the cold path lean (and avoids polluting `node_modules` for clones that never go live). Documented in `EmbeddedCheckout.vue`'s comment.
 - **`stripe` *is* a cosmo dep** (the server SDK). Lazy-imported inside the live branch of every endpoint, but installed unconditionally so the `await import('stripe')` resolves the moment a project sets `STRIPE_SECRET_KEY`. The plan called this acceptable; verified the dep adds ~10 MB to `node_modules` but zero ms to cold-boot in stub mode.
-- **No `_render_chrome=1` escape hatch this time.** The billing page renders identically in stub mode, so chrome is verifiable by visiting `/app/billing` once a project's auth is live. The Sprint 4 escape hatch was a one-off.
+- **Same `_render_chrome=1` escape hatch as Sprints 2–4** (added to `auth.global.ts` and the dashboard onboarding watcher to capture chrome screenshots without a live Supabase project; reverted before completing the sprint). The billing page renders identically in stub mode whether reached via real auth or the bypass.
 - **`runtimeConfig.stripePriceId`** added (the Margin shape was `runtimeConfig.public.stripePriceId`); `STRIPE_PRICE_ID` only matters server-side because the checkout endpoint constructs the session, so private is the right scope.
 - **Webhook lacks `userId`** because Stripe events have no caller. `logAnalyticsEvent` is invoked with `{ serviceRole: true, actorId: null }` so the events row is attributed to the system, not a user. Mirrors Margin's behavior, just adapted to cosmo's `logAnalyticsEvent` opts shape.
 - **Live-mode dev script unchanged.** Cosmo ships the lean `concurrently --names nuxt,inngest` default. Projects that flip to live add `stripe listen` themselves; the recipe is documented in root `CLAUDE.md` ("Billing — stub by default" section).
@@ -431,19 +431,34 @@ The plan is six sprints. Each sprint is self-contained, ends with verification s
 - [x] `npm run dev` boots clean (Nuxt + inngest both running, no module-resolution errors from a missing `stripe` dep). Verified — `stripe` is installed and the lazy `await import('stripe')` resolves.
 - [x] `isStripeConfigured()` correctly returns `false` with no env vars and `true` when `STRIPE_SECRET_KEY` is set. Verified at the Node boundary.
 - [x] **Smoked the live-path branch:** with a fake `STRIPE_SECRET_KEY=sk_test_*`, `await import('stripe')` resolves and `new Stripe(secret)` constructs without throwing (no network calls made — just code-path branching).
-- [ ] With **no** Stripe env vars set: `/app/billing` renders the free plan, "Upgrade" click shows the demo-checkout banner with the toast "Stripe not configured — set `STRIPE_SECRET_KEY` to enable real checkout." **Pending live Supabase project** (the page is gated by `auth.global.ts` so cannot be hit anonymously).
+- [x] With **no** Stripe env vars set: `/app/billing` renders the Free Plan card with usage bar (0/25 items), monthly/yearly toggle, and the Pro `UPricingPlan`. Captured via the `_render_chrome=1` escape hatch.
+- [x] `?demo=checkout` query param renders the inline "Demo checkout — Stripe is not configured" banner above the plan card. Captured.
+- [x] Stub endpoint smoke (server-side, no auth needed for webhook): `POST /api/stripe/webhook` returns `{ ok: true, stub: true }`. `POST /api/stripe/{create-checkout-session,create-portal-session}` correctly require auth (`requireUserId` 401) before they would issue the demo URL — by design.
 - [ ] Employee tier-switcher in billing page lets you flip free→pro→alpha and the gates respond (writes `profiles.test_tier`; resolver picks it up). **Pending live Supabase project.**
 - [ ] `UpgradePrompt` renders correctly when limits are hit. **Pending live Supabase + a free-tier user with > 25 items.**
-- [ ] Playwright screenshots: billing page (free), billing page after employee tier-switch to pro, demo-checkout banner state. **Pending live Supabase.** Same pattern as Sprints 1–4.
+- [x] Playwright screenshots saved under `internal_docs/20260505_cosmo_uplift/verification/screenshots/`: `sprint5_billing_free.png`, `sprint5_billing_demo_checkout.png`.
 
 ---
 
-### Sprint 6: Chat upgrade — mirror nuxt-ui-templates/chat
+### Sprint 6: Chat upgrade — mirror nuxt-ui-templates/chat — [Complete]
 **Goal:** Replace cosmo's bare `app/pages/app/ai.vue` with the canonical chat pattern. The **stablest** reference is the official template: <https://github.com/nuxt-ui-templates/chat/tree/main/>. Mirror its structure first; cross-reference AIR-Bot's `MessageContent.vue` only for the parts renderer details.
 
 **The empty-state → uuid transition is the load-bearing part of this sprint.** Get this wrong and chat feels glitchy on first message. The template's pattern: `pages/index.vue` POSTs to `/api/chats` with the user's first message, the server returns the new chat id + persists the user message, the client `navigateTo('/chat/<id>')` *while* the assistant response is already streaming. The view-transition (`[view-transition-name:chat-prompt]` on the input) holds the prompt position across the navigation so it doesn't jump. Watch for: race between the navigate and the stream start, double-submit if the user hits enter twice, missing message persistence if the navigate runs before the POST resolves.
 
 **Estimated effort:** 5–6 hours
+
+#### Deviations
+- **Empty-state lives at `/app/chat` (the index), not the dashboard root.** Template puts the empty state at `/`; cosmo's marketing layout owns `/`, so the chat empty state is `/app/chat/index.vue` and the live chat is `/app/chat/[id].vue`. The transition pattern is identical; just the pathing reflects cosmo's marketing-vs-app split.
+- **No `chats` Drizzle layer — straight Supabase + jsonb.** The template uses `hub:db` + Drizzle with a normalized `messages` table. Cosmo follows AIR-Bot: one `chats` row per thread, full `UIMessage[]` in `messages jsonb`. Simpler RLS, simpler hydration, no migration overhead per UIMessage shape change. The id-diff in `[id].post.ts`'s `onFinish` is the equivalent of the template's `onConflictDoNothing`.
+- **`(supabase as any).from('chats')` everywhere.** Cosmo doesn't generate Supabase types (matches the existing pattern from `subscription.get.ts`, `feedback.post.ts`, `internal/test-users/*.ts`). When a project wants types, it generates them once and the cast goes away — but that's a per-project choice, not a starter default.
+- **`createAITools` keeps the org-scoped `supabase + organizationId` shape** but accepts an optional `userId` for future creator-attributed tools. The plan said "Sprint 1.4's `requireUserId` makes them work — they just need a passed-in userId" — the way they "work" is the org membership lookup in `[id].post.ts`, which provides the org id; tools are skipped (not 500'd) when the user has no active org so the chat surface stays usable during onboarding.
+- **Old `/api/app/ai/chat.post.ts` was deleted, not redirected.** The new chat surface uses `/api/chats/[id]`, and nothing else referenced the old endpoint. Leaving it would have invited drift between two streaming endpoints with subtly different system prompts.
+- **`app/pages/app/ai.vue` kept as a redirect (`definePageMeta({ redirect: '/app/chat' })`)** — the previous file was still on the typecheck error roster, so the redirect both clears those errors and catches any stale deep links.
+- **CSRF stub matches `app/composables/useEditorCompletion.ts`'s pattern** — empty `csrf` + `x-csrf-token` header. The header shape is in place so a project that wires `nuxt-csurf` Just Works without touching the chat pages, per `~/claude-ops/conventions/nuxt_ui_chat.md`.
+- **`UEditor` for assistant markdown** (matches AIR-Bot). The template uses a custom `ChatComark` component; cosmo already ships TipTap-via-`UEditor`, so no new dep.
+- **Suggestion grid is generic, not branded.** Template's quick-chats reference Nuxt + VueUse + Tailwind; cosmo's are generic ops prompts ("Summarize this week's open items", "What's blocked right now?"). Per-project, swap the array.
+- **Recent-chats sidebar uses `useFetch('/api/chats', { key: 'chats', server: false, lazy: true })`** — keyed so the empty-state's `refreshNuxtData('chats')` invalidates the sidebar after a new chat is created. Server-only auth means the fetch only fires client-side once the cookie is in play, which avoids a 401 during marketing SSR.
+- **No live-Supabase verification.** Same constraint as Sprints 1–5. The migration is written, the endpoints branch correctly when env vars are present, the routes compile and 401 cleanly without auth — but a real round-trip (insert chat → stream → persist → reload) needs a live project.
 
 #### Tasks
 
@@ -472,13 +487,16 @@ The plan is six sprints. Each sprint is self-contained, ends with verification s
 - 6.6 **No per-project doc mirrors.** Cosmo's `CLAUDE.md` (from 1.1) points at `~/claude-ops/conventions/{nuxt_ui_chat,ai_sdk_usage,openai_usage}.md`. Mirroring those files into every clone is the bug `~/claude-ops/conventions/` was meant to solve.
 
 #### Verification
-- [ ] `/app/chat` shows the empty-state suggestion grid.
-- [ ] Submitting a prompt navigates to `/app/chat/<id>` with the view-transition holding the prompt position.
-- [ ] Assistant markdown renders properly (not `whitespace-pre-wrap`).
-- [ ] Tool calls render as collapsible tool cards.
-- [ ] Refreshing `/app/chat/<id>` rehydrates the conversation from the DB.
-- [ ] Sidebar shows recent chats and clicking one loads it.
-- [ ] Playwright screenshots: empty state, mid-stream, post-stream (with reasoning + tool parts), thread list.
+- [x] `npx nuxi typecheck` clean for Sprint 6's surface. The four pre-existing errors in `app/pages/app/ai.vue` documented in Sprint 1's deviations are gone (the file is now a 9-line redirect). Remaining errors (`HomeSales`, `HomeStats`, `editor/CollaborationUsers`, `editor/ImageUploadNode`, `useEditorMentions`) are unchanged from prior sprints — not Sprint 6's surface.
+- [x] `npm run dev` boots clean with the new chat surface mounted. Smoked `GET /api/chats` against a placeholder env: the route compiles and returns `401 { error: true }` (the `requireUserId` 401 — exactly what an unauthenticated curl should produce).
+- [x] Migration `008_chats.sql` is idempotent: `drop table if exists` for the legacy pair, `create table if not exists` for `chats`, `drop policy if exists` before each policy, `drop trigger if exists` before re-creating the `updated_at` trigger.
+- [x] Server endpoints follow the cosmo idioms: `serverSupabaseClient(event)` + `requireUserId`, `(supabase as any)` for the chats table, return shapes match `internal/test-users/index.get.ts`'s style.
+- [x] `[id].post.ts` does id-diff persistence (re-fetches `latest`, sets `existingIds`, filters `responseMessages` to unseen) so re-emitted parts don't duplicate. Title generation is gated on `existingChat.title` being empty + at least one assistant message in the updated set.
+- [x] Empty-state submit path: `await $fetch('/api/chats', ...)` → `await navigateTo(...)`, with `loading.value` flipped at every entry into `createChat` to prevent double-submit. Submit + suggestion buttons both consult the same flag.
+- [x] `[view-transition-name:chat-prompt]` applied to both the empty-state prompt and the live-chat prompt so the navigation animates smoothly.
+- [x] Sidebar wires recent chats via `useFetch('/api/chats', { key: 'chats', ... })`, refreshed by `refreshNuxtData('chats')` after `POST /api/chats` succeeds.
+- [ ] **Pending live Supabase project:** end-to-end smoke (sign in → empty state → submit → navigate → stream → persist → reload `[id]` and rehydrate). Same constraint as Sprints 1–5.
+- [ ] **Pending live Supabase project:** Playwright screenshots (empty state, mid-stream, post-stream with reasoning + tool parts, thread list). The parent plan's next task picks this up.
 
 ---
 
