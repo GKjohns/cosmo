@@ -40,7 +40,7 @@ The `dev` script boots Nuxt and `inngest-cli` in parallel via `concurrently`.
 
 When you clone cosmo into a new project:
 
-1. Replace `{{PROJECT_REF}}` in `.cursor/mcp.json` with the new Supabase project ref.
+1. Copy `.cursor/mcp.json.example` to `.cursor/mcp.json` and fill in `{{PROJECT_REF}}` (Supabase project ref) and `{{SUPABASE_ACCESS_TOKEN}}` (personal access token from Supabase → Account → Access Tokens). The live file is gitignored — never commit it.
 2. Update brand copy in `package.json`, `README.md`, `nuxt.config.ts` (head meta), and `app/components/AppLogo.vue`.
 3. Run the migrations under `supabase/migrations/` against the new Supabase project (`001`-`007` ship today).
 

@@ -26,3 +26,8 @@ logs
 # VSC
 .history
 .github/workflows/
+
+# Cursor — per-developer MCP / config (often contains secrets).
+# Ship the .example template only; the live file is created locally per clone.
+.cursor/*
+!.cursor/mcp.json.example
