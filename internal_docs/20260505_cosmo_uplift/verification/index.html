@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cosmo Uplift — Verification</title>
+<style>
+:root {
+  --bg: #fafafa;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --rule: #e2e8f0;
+  --card: #ffffff;
+  --accent: #475569;
+  --tint: #f1f5f9;
+  --good: #16a34a;
+  --pending: #ca8a04;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+.wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 56px 32px 96px;
+}
+h1 {
+  font-size: 32px;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+.lede {
+  color: var(--muted);
+  margin: 0 0 32px;
+  font-size: 16px;
+}
+.summary {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 0 0 40px;
+}
+.summary h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.summary p { margin: 0 0 8px; }
+.kv {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 4px 12px;
+  font-size: 14px;
+  margin-top: 12px;
+}
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.badge-good { background: #dcfce7; color: #166534; }
+.badge-pending { background: #fef3c7; color: #92400e; }
+.sprint {
+  margin: 0 0 56px;
+  padding: 0;
+}
+.sprint h2 {
+  font-size: 22px;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+.sprint .meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 20px;
+}
+.sprint h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 28px 0 12px;
+}
+.shot {
+  margin: 0 0 24px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card);
+}
+.shot img {
+  width: 100%;
+  display: block;
+  border-bottom: 1px solid var(--rule);
+}
+.shot figcaption {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--tint);
+}
+.deviation, .gotcha {
+  background: var(--card);
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 0 0 12px;
+  font-size: 14px;
+  border-radius: 0 6px 6px 0;
+}
+.deviation strong { color: var(--ink); }
+ul.checks {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+ul.checks li {
+  padding: 4px 0 4px 24px;
+  position: relative;
+  color: var(--ink);
+}
+ul.checks li::before {
+  position: absolute;
+  left: 0;
+  top: 4px;
+}
+ul.checks li.done::before { content: "✓"; color: var(--good); font-weight: bold; }
+ul.checks li.pending::before { content: "○"; color: var(--pending); font-weight: bold; }
+ul.checks li.pending { color: var(--muted); }
+code {
+  background: var(--tint);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 16px 20px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.5;
+}
+hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 56px 0;
+}
+.golden ol {
+  padding-left: 20px;
+  margin: 0;
+}
+.golden ol li {
+  margin: 6px 0;
+}
+footer {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Cosmo Uplift — Verification</h1>
+<p class="lede">Six-sprint promotion of mature pieces from Daylight, Margin, ARIA, and AIR-Bot back into the cosmo starter, so future Monument Labs projects begin where current projects ended up.</p>
+
+<section class="summary">
+  <h2>Status</h2>
+  <p><span class="badge badge-good">6 of 6 sprints complete</span> &nbsp; Branch <code>cosmo-uplift</code>, not merged, not pushed.</p>
+  <dl class="kv">
+    <dt>Sprint 1</dt><dd>Auth foundation + repo hygiene</dd>
+    <dt>Sprint 2</dt><dd>Multi-tenancy (orgs, memberships, onboarding, settings)</dd>
+    <dt>Sprint 3</dt><dd>Platform utilities (email, analytics, AI Gateway, design tokens, error/help)</dd>
+    <dt>Sprint 4</dt><dd>Admin + ops surface (employee gate, dev-tools, feedback)</dd>
+    <dt>Sprint 5</dt><dd>Billing scaffold (stub-by-default, real Stripe when keys set)</dd>
+    <dt>Sprint 6</dt><dd>Chat upgrade (mirror nuxt-ui-templates/chat)</dd>
+  </dl>
+  <p style="margin-top:16px;font-size:14px;color:var(--muted);">Live-data verification (signup → onboarding → org creation, real Stripe round-trip, end-to-end chat stream) is gated on a clone wiring its own Supabase + OpenAI keys. The chrome and wiring shown here were captured against placeholder env values via a temporary <code>?_render_chrome=1</code> middleware bypass that is reverted before each sprint commit.</p>
+</section>
+
+<!-- Sprint 1 -->
+<section class="sprint">
+  <h2>Sprint 1 — Auth foundation + repo hygiene</h2>
+  <p class="meta">Daylight's auth pages + middleware + <code>useProfile</code>; bumped Nuxt 4.4.4, Nuxt UI 4.7.1; AEGIS branding demoted to neutral "Cosmo".</p>
+
+  <h3>Login + signup</h3>
+  <figure class="shot">
+    <img src="screenshots/sprint1_login.png" alt="Login page" loading="lazy">
+    <figcaption>Daylight's compact email-then-expand pattern; split-screen brand panel; <code>auth.global.ts</code> middleware preserves the <code>?redirect=</code> query.</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="screenshots/sprint1_signup.png" alt="Signup page" loading="lazy">
+    <figcaption>Signup page with the same split-screen chrome; <code>handle_new_user</code> trigger from <code>001_initial.sql</code> creates the profiles row server-side.</figcaption>
+  </figure>
+
+  <h3>Auth guard + home</h3>
+  <figure class="shot">
+    <img src="screenshots/sprint1_redirect.png" alt="Login redirect with redirect query" loading="lazy">
+    <figcaption>Visiting <code>/app</code> while logged out bounces to <code>/auth/login?redirect=/app</code>. Cosmo doesn't have a literal <code>/app/index</code> route — <code>/app</code> is the index.</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="screenshots/sprint1_home.png" alt="Marketing home with Cosmo branding" loading="lazy">
+    <figcaption>AEGIS branding demoted to neutral "Cosmo": <code>package.json</code>, <code>app.config.ts</code>, <code>AppLogo.vue</code>, <code>AppFooter.vue</code>, OG card, <code>app.vue</code> titleTemplate.</figcaption>
+  </figure>
+
+  <h3>Deviations</h3>
+  <div class="deviation"><strong>nuxt-og-image rolled back from ^6.5 → ^5.1.13.</strong> v6 dropped the built-in <code>Saas</code> component name, breaking <code>defineOgImageComponent('Saas')</code> across <code>blog</code>, <code>pricing</code>, <code>changelog</code>, <code>docs</code>.</div>
+  <div class="deviation"><strong>Demo pages (customers, inbox) hidden but kept.</strong> Sidebar links removed; files retained with TODO header so projects can opt back in or delete.</div>
+  <div class="deviation"><strong>Pre-existing typecheck errors documented.</strong> <code>HomeSales</code>, <code>HomeStats</code>, <code>editor/CollaborationUsers</code>, <code>editor/ImageUploadNode</code>, <code>useEditorMentions</code> trace back to the initial commit. <code>app/pages/app/ai.vue</code>'s errors were resolved in Sprint 6.</div>
+
+  <h3>Verification</h3>
+  <ul class="checks">
+    <li class="done"><code>npm install &amp;&amp; npm run dev</code> boots; both Nuxt and Inngest CLI start.</li>
+    <li class="done"><code>npx nuxi typecheck</code> clean for Sprint 1's surface.</li>
+    <li class="done">Visiting <code>/app</code> logged out redirects to <code>/auth/login?redirect=/app</code>.</li>
+    <li class="done"><code>UserMenu</code> shows the real authed user via <code>useProfile()</code> — no more <code>'A. Shepard'</code> hardcode.</li>
+    <li class="pending">Live signup → <code>auth.users</code> row → land on <code>/app</code>. Pending live Supabase project.</li>
+  </ul>
+</section>
+
+<!-- Sprint 2 -->
+<section class="sprint">
+  <h2>Sprint 2 — Multi-tenancy</h2>
+  <p class="meta">ARIA's <code>useOrganization</code>, <code>useNavigation</code>, <code>TeamsMenu</code>, onboarding, invitations, settings/{profile,members}. Migration <code>002_orgs_and_invitations.sql</code> adds <code>is_employee</code>, <code>is_test_user</code>, <code>timezone</code>, <code>avatar_url</code>, <code>display_name</code> to <code>profiles</code>.</p>
+
+  <figure class="shot">
+    <img src="screenshots/sprint2_onboarding.png" alt="Onboarding screen" loading="lazy">
+    <figcaption>First-run onboarding through cosmo's auth split-screen layout (cleaner than ARIA's gradient-blob standalone). User without org gets routed here by the <code>needsOnboarding</code> watcher in <code>dashboard.vue</code>.</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="screenshots/sprint2_settings_profile.png" alt="Settings profile tab" loading="lazy">
+    <figcaption>Flat profile form (display_name + role + current_focus + timezone). ARIA's PDF-import-to-profile + AI-context blob were stripped.</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="screenshots/sprint2_settings_team.png" alt="Settings team / members tab" loading="lazy">
+    <figcaption>Members list, role admin/member, invitation creation. Invite path is <code>/auth/invitations/accept</code> (auth layout — fresh users with no org need to land somewhere they can authenticate, not somewhere that requires an active org).</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="screenshots/sprint2_dashboard_nav.png" alt="Dashboard sidebar navigation" loading="lazy">
+    <figcaption>Sidebar driven from <code>useNavigation().mainNav</code> with command palette wired to <code>commandGroups</code>. Demo customers/inbox links hidden until a project opts back in.</figcaption>
+  </figure>
+
+  <h3>Deviations</h3>
+  <div class="deviation"><strong><code>requireActiveOrg</code> + <code>requireOrgMember</code> split.</strong> ARIA used a single helper that did both jobs implicitly. Cosmo separates: explicit org-scoped routes vs "current org from cookie" routes.</div>
+  <div class="deviation"><strong><code>002_orgs_and_invitations.sql</code> is fully idempotent.</strong> Every <code>create policy</code> preceded by a matching <code>drop policy if exists</code>.</div>
+  <div class="deviation"><strong><code>/api/app/profile</code> uses PATCH, not PUT.</strong> Partial-update semantics; matches Daylight.</div>
+
+  <h3>Verification</h3>
+  <ul class="checks">
+    <li class="done"><code>npx nuxi typecheck</code> clean for Sprint 2's surface.</li>
+    <li class="done">Sidebar wires through <code>useNavigation</code>; settings tabs render from real composables.</li>
+    <li class="pending">Fresh signup with no org redirects to <code>/onboarding</code>. Pending live Supabase.</li>
+    <li class="pending">Settings → Members shows current user as admin; invite by email writes to <code>invitations</code>. Pending live Supabase.</li>
+  </ul>
+</section>
+
+<!-- Sprint 3 -->
+<section class="sprint">
+  <h2>Sprint 3 — Platform utilities</h2>
+  <p class="meta">Resend wrapper with dedupe + dev-gate; <code>analytics</code> schema with <code>log_event</code> SECURITY DEFINER + <code>analytics_reader</code> role; <code>aiModels.ts</code> registry; design-token CSS; <code>app/error.vue</code>; <code>app/pages/help.vue</code>. Migrations <code>003_email_sends.sql</code> + <code>004_analytics.sql</code>.</p>
+
+  <figure class="shot">
+    <img src="screenshots/sprint3_error.png" alt="Branded error page" loading="lazy">
+    <figcaption>Daylight's error chrome — 404/500 with retry + help link + footer. The same template surfaces non-fatal errors raised through <code>createError</code>.</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="screenshots/sprint3_help.png" alt="Help page" loading="lazy">
+    <figcaption>Categorized FAQ accordions (Getting started, Billing &amp; plans, Data &amp; privacy) + <code>mailto:</code> contact card. Added to <code>auth.global.ts</code>'s public-routes allowlist so logged-out users can reach it.</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="screenshots/sprint3_login_tokens.png" alt="Login page with new design tokens" loading="lazy">
+    <figcaption>Login re-rendered with the design-token cascade — slate primary, system fonts, white card on muted bg.</figcaption>
+  </figure>
+
+  <h3>Deviations</h3>
+  <div class="deviation"><strong><code>renderEditorialEmail</code> takes a <code>brand</code> arg.</strong> Daylight's hardcoded brand tokens were generalized; cosmo defaults to slate accent / system fonts / "Cosmo" / <code>hello@example.com</code>.</div>
+  <div class="deviation"><strong>MODELS registry uses generic keys.</strong> <code>default-chat</code>, <code>default-fast</code>, <code>title-gen</code>, <code>default-reasoning</code> — Daylight's task-specific keys (<code>journalExtract</code>, <code>voiceExtract</code>) would have been dead entries in cosmo.</div>
+  <div class="deviation"><strong>No <code>page-viewed.global.ts</code> by default.</strong> Cosmo ships <code>logEvent()</code> primitive + a commented-out example middleware (<code>page-viewed.example.ts</code>) projects copy in if they want it.</div>
+  <div class="deviation"><strong>AI Gateway autoswitches.</strong> Endpoints branch on <code>AI_GATEWAY_API_KEY</code> presence — when set, the AI SDK auto-routes via the gateway-style id; when not, the OpenAI prefix is stripped.</div>
+
+  <h3>Verification</h3>
+  <ul class="checks">
+    <li class="done"><code>npx nuxi typecheck</code> clean for Sprint 3's surface.</li>
+    <li class="done">Hitting a non-existent route renders <code>app/error.vue</code>.</li>
+    <li class="done"><code>/help</code> renders with three FAQ categories and contact card.</li>
+    <li class="done"><code>MODELS</code> registry resolves keys to model ids; <code>chat.post.ts</code>/<code>completion.post.ts</code> source ids from the registry.</li>
+    <li class="pending"><code>useAnalytics().logEvent()</code> writes a row in <code>analytics.events</code>. Pending live Supabase.</li>
+    <li class="pending">Real Resend send from <code>RESEND_ALLOW_SEND=1</code>. Pending Resend account; smoke happens on Sprint 4 dev-tools.</li>
+  </ul>
+</section>
+
+<!-- Sprint 4 -->
+<section class="sprint">
+  <h2>Sprint 4 — Admin + ops surface</h2>
+  <p class="meta">Employees (<code>profiles.is_employee = true</code>) hit <code>/app/admin</code> for KPIs/funnel/feedback/activity, <code>/app/dev-tools</code> for connectivity probes + test-user CRUD + send-test-email. Non-employees get a 404 (not a redirect — internal routes stay invisible).</p>
+
+  <figure class="shot">
+    <img src="screenshots/sprint4_admin.png" alt="Admin dashboard chartless KPI/funnel view" loading="lazy">
+    <figcaption>Margin's chartless admin view — KPI cards, hand-rolled funnel (Signed Up → Visited App → Logged Events → Created Content), signups table with engaged/started/bounced status, activity feed, errors, event-type breakdown.</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="screenshots/sprint4_devtools.png" alt="Dev tools page" loading="lazy">
+    <figcaption>Connectivity probes (API/Supabase/localStorage), env/browser inspector, test-user manager (create + magic-link round-trip), send-test-email button. Kernel-WS probe and OG-image preview from Margin were dropped.</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="screenshots/sprint4_feedback_form.png" alt="Feedback form" loading="lazy">
+    <figcaption>Three-question form, anon + authed, captures <code>page_context</code>. <code>FeedbackForm.vue</code> is mounted wherever a project wants — cosmo doesn't ship a dedicated <code>/feedback</code> page.</figcaption>
+  </figure>
+
+  <h3>Deviations</h3>
+  <div class="deviation"><strong>Admin stats query <code>items</code>, not <code>notebooks</code>.</strong> Cosmo's <code>001_initial.sql</code> has <code>items</code> as the generic resource. Funnel renamed accordingly.</div>
+  <div class="deviation"><strong>Email resolved via <code>auth.admin.listUsers</code>.</strong> Cosmo profiles have no <code>email</code> column; admin stats and test-user listings build a <code>Map&lt;userId, email&gt;</code> at query time.</div>
+  <div class="deviation"><strong>Test-user create reads <code>TEST_USER_EMAIL_DOMAIN</code> env var.</strong> Margin hardcodes <code>monumentlabs.io</code>; cosmo defaults to it but lets projects override.</div>
+  <div class="deviation"><strong><code>send-test-email</code> recipient is always the calling employee.</strong> No client-controlled <code>to</code> field. The <code>sendEmail</code> employee-skip guard means a real send won't go out from this button — it returns <code>skipped_employee</code>, which is the truthful state and is surfaced in the toast.</div>
+
+  <h3>Verification</h3>
+  <ul class="checks">
+    <li class="done"><code>npx nuxi typecheck</code> clean for Sprint 4's surface.</li>
+    <li class="done"><code>/app/admin</code> + <code>/app/dev-tools</code> wired with <code>employee</code> page middleware; APIs guarded by <code>requireEmployee</code>.</li>
+    <li class="done"><code>FeedbackForm</code> renders cleanly; anon + authed paths both wired.</li>
+    <li class="pending">Non-employee → 404. Pending live Supabase user with <code>is_employee = false</code>.</li>
+    <li class="pending">Real KPI counts. Pending live Supabase + seeded data.</li>
+    <li class="pending">Test-user create → magic-link round-trip. Pending live Supabase.</li>
+  </ul>
+</section>
+
+<!-- Sprint 5 -->
+<section class="sprint">
+  <h2>Sprint 5 — Billing scaffold</h2>
+  <p class="meta">Stub-by-default. <code>/app/billing</code> renders cleanly with no Stripe env vars set; real Stripe activates only when <code>STRIPE_SECRET_KEY</code> is set. The <code>stripe</code> SDK is <code>await import()</code>-ed only inside the live branch — it never loads in stub mode.</p>
+
+  <figure class="shot">
+    <img src="screenshots/sprint5_billing_free.png" alt="Billing page in stub mode showing Free plan" loading="lazy">
+    <figcaption>Free plan card, current usage bar (0/25 items), monthly/yearly toggle, Pro <code>UPricingPlan</code>. Pricing data from <code>app/composables/usePlans.ts</code> mirrors the shape of <code>content/2.pricing.yml</code> so marketing and authed views stay in sync.</figcaption>
+  </figure>
+  <figure class="shot">
+    <img src="screenshots/sprint5_billing_demo_checkout.png" alt="Billing page with demo-checkout banner" loading="lazy">
+    <figcaption>With <code>?demo=checkout</code> query: inline blue "Demo checkout — Stripe is not configured. This is what users see when they hit Upgrade in stub mode. Set STRIPE_SECRET_KEY (and matching webhook + price IDs) in your .env to enable real checkout."</figcaption>
+  </figure>
+
+  <h3>Stub endpoint smoke</h3>
+  <pre>$ curl -X POST -H "Content-Type: application/json" -d '{}' \
+    http://localhost:3000/api/stripe/webhook
+{ "ok": true, "stub": true }
+
+$ curl -X POST -H "Content-Type: application/json" -d '{}' \
+    http://localhost:3000/api/stripe/create-checkout-session
+401 → "User is not authenticated. Please sign in and try again."
+# Correct: requireUserId guards the route before issuing the demo URL.</pre>
+
+  <h3>Deviations</h3>
+  <div class="deviation"><strong>Subscriptions scoped to organizations, not users.</strong> Margin: <code>organization_id</code>; Daylight: <code>user_id</code>. Cosmo follows Margin because Sprint 2's multi-tenancy is org-first — a user upgrades the active org's plan.</div>
+  <div class="deviation"><strong>Generic resource map.</strong> <code>items</code>, <code>ai_tokens</code>, <code>storage_bytes</code> instead of Margin's notebook-specific resources. Other resources are commented placeholders inside <code>007_usage_tracking.sql</code> for projects to extend.</div>
+  <div class="deviation"><strong><code>profiles.test_tier</code> column for the employee tier-switcher.</strong> Smallest-possible thing that lets <code>getUserTier</code> return a stub-mode override. No separate <code>dev_tier_overrides</code> table.</div>
+  <div class="deviation"><strong><code>stripe</code> server SDK is a cosmo dep; <code>@stripe/stripe-js</code> is not.</strong> Server SDK lazy-imports inside the live branch; client SDK is project-installs-on-flip. <code>EmbeddedCheckout.vue</code> falls back to the demo banner if the dep is missing.</div>
+  <div class="deviation"><strong>Lean dev script.</strong> Cosmo ships <code>concurrently --names nuxt,inngest</code>. Projects that flip to live add <code>stripe listen --forward-to localhost:3000/api/stripe/webhook</code> themselves; recipe is documented in root <code>CLAUDE.md</code>.</div>
+
+  <h3>Verification</h3>
+  <ul class="checks">
+    <li class="done"><code>npx nuxi typecheck</code> clean for Sprint 5's surface.</li>
+    <li class="done"><code>npm run dev</code> boots clean; <code>isStripeConfigured()</code> branches correctly with and without <code>STRIPE_SECRET_KEY</code>; <code>await import('stripe')</code> resolves with a fake key.</li>
+    <li class="done"><code>/app/billing</code> renders Free plan card + usage bar in stub mode.</li>
+    <li class="done"><code>?demo=checkout</code> renders the inline demo-checkout banner.</li>
+    <li class="done"><code>POST /api/stripe/webhook</code> returns <code>{ ok: true, stub: true }</code>; checkout/portal correctly require auth before issuing the demo URL.</li>
+    <li class="pending">Employee tier-switcher round-trip. Pending live Supabase.</li>
+    <li class="pending"><code>UpgradePrompt</code> at limits. Pending live Supabase + a free-tier user with &gt; 25 items.</li>
+  </ul>
+</section>
+
+<!-- Sprint 6 -->
+<section class="sprint">
+  <h2>Sprint 6 — Chat upgrade</h2>
+  <p class="meta">Mirror <a href="https://github.com/nuxt-ui-templates/chat/tree/main/">nuxt-ui-templates/chat</a>; cross-reference AIR-Bot's <code>MessageContent.vue</code> for the parts renderer. New <code>008_chats.sql</code> drops unused <code>ai_messages</code>/<code>ai_conversations</code>; flatter <code>chats</code> table with <code>messages jsonb</code>. Old <code>app/pages/app/ai.vue</code> becomes a redirect.</p>
+
+  <figure class="shot">
+    <img src="screenshots/sprint6_chat_empty.png" alt="Chat empty state with greeting and suggestion grid" loading="lazy">
+    <figcaption>Empty state at <code>/app/chat</code>: greeting (time-aware), 6 generic suggestion chips, prompt input wearing <code>[view-transition-name:chat-prompt]</code>. Submit awaits <code>POST /api/chats</code> before <code>navigateTo('/app/chat/&lt;id&gt;')</code> fires; same view-transition is on the <code>[id].vue</code> prompt so the navigate animates smoothly.</figcaption>
+  </figure>
+
+  <h3>Empty-state → uuid wiring (load-bearing)</h3>
+  <ol class="golden">
+    <li>User submits in <code>/app/chat</code>. <code>loading.value = true</code> blocks suggestion buttons + submit.</li>
+    <li><code>await $fetch('/api/chats', { method: 'POST', body: { id, message } })</code> — server inserts the chat row + first user message.</li>
+    <li><code>refreshNuxtData('chats')</code> — sidebar picks up the new chat.</li>
+    <li><code>await navigateTo('/app/chat/&lt;id&gt;')</code>.</li>
+    <li><code>[id].vue</code> hydrates from <code>useFetch('/api/chats/&lt;id&gt;')</code>, builds the <code>Chat</code> with the persisted user message.</li>
+    <li><code>onMounted</code> sees <code>messages.length === 1 &amp;&amp; role === 'user'</code> → calls <code>chat.regenerate()</code> to kick off the assistant turn.</li>
+    <li>The shared <code>[view-transition-name:chat-prompt]</code> keeps the prompt locked across the navigation. Submit is disabled while <code>loading</code> so a double-tap can't create two chats.</li>
+  </ol>
+
+  <h3>Deviations</h3>
+  <div class="deviation"><strong>Empty state lives at <code>/app/chat</code>.</strong> Template puts it at <code>/</code>; cosmo's marketing layout owns <code>/</code>, so the chat empty state is <code>/app/chat/index.vue</code>.</div>
+  <div class="deviation"><strong>jsonb persistence, no Drizzle.</strong> Template uses <code>hub:db</code> + Drizzle with a normalized messages table. Cosmo follows AIR-Bot: one row per thread, full <code>UIMessage[]</code> in <code>messages jsonb</code>. Simpler RLS, simpler hydration.</div>
+  <div class="deviation"><strong>Id-diff persistence in <code>onFinish</code>.</strong> Re-fetches latest, builds <code>existingIds</code>, filters <code>responseMessages</code> to unseen — re-emitted parts don't duplicate.</div>
+  <div class="deviation"><strong><code>UEditor</code> for assistant markdown.</strong> Matches AIR-Bot. Template uses a custom <code>ChatComark</code>; cosmo already ships TipTap-via-<code>UEditor</code>, so no new dep.</div>
+  <div class="deviation"><strong>Tools skipped (not 500'd) when no active org.</strong> <code>createAITools</code> skips registration during onboarding rather than throwing — keeps the chat surface usable for fresh users.</div>
+  <div class="deviation"><strong>Old <code>/api/app/ai/chat.post.ts</code> deleted.</strong> Nothing referenced it post-cutover; leaving it would have invited drift between two streaming endpoints.</div>
+
+  <h3>Verification</h3>
+  <ul class="checks">
+    <li class="done"><code>npx nuxi typecheck</code> — the four pre-existing <code>app/pages/app/ai.vue</code> errors are gone (file is now a 9-line redirect).</li>
+    <li class="done"><code>npm run dev</code> boots clean.</li>
+    <li class="done"><code>/app/chat</code> empty state renders: greeting, 6 suggestion chips, prompt with view-transition.</li>
+    <li class="done"><code>/app/ai</code> redirects to <code>/app/chat</code>.</li>
+    <li class="done"><code>GET /api/chats</code> + <code>POST /api/chats</code> return 401 without auth (<code>requireUserId</code>).</li>
+    <li class="done">Migration <code>008_chats.sql</code> idempotent (drop legacy + create-if-not-exists).</li>
+    <li class="pending">End-to-end smoke (sign in → submit → navigate → stream → persist → reload). Pending live Supabase + OpenAI key.</li>
+    <li class="pending">Mid-stream / post-stream / thread-list screenshots (with reasoning + tool parts). Pending live Supabase + OpenAI.</li>
+  </ul>
+</section>
+
+<hr>
+
+<!-- Golden path -->
+<section class="golden">
+  <h2 style="font-size:22px;margin:0 0 8px;">Golden path (what a fresh clone gets)</h2>
+  <p class="meta" style="margin-bottom:16px;">The cumulative shape of cosmo after this branch ships:</p>
+  <ol>
+    <li>Clone cosmo. Run <code>npm install</code> + <code>cp .env.example .env</code> + fill in <code>SUPABASE_URL</code>, <code>SUPABASE_ANON_KEY</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code>, <code>OPENAI_API_KEY</code>. Replace <code>{{PROJECT_REF}}</code> in <code>.cursor/mcp.json</code>.</li>
+    <li>Run migrations <code>001</code>–<code>008</code> against the new Supabase project.</li>
+    <li><code>npm run dev</code> — Nuxt + Inngest both boot. Visit <code>/auth/signup</code>, sign up.</li>
+    <li>Get routed to <code>/onboarding</code>; create an org. Land on <code>/app</code> with the org context populated; <code>TeamsMenu</code> shows the org.</li>
+    <li>Visit <code>/app/billing</code> — Free plan, usage bar, Pro upgrade card. "Upgrade" shows the demo-checkout banner with the stub toast.</li>
+    <li>Visit <code>/app/chat</code> — empty state with greeting + suggestion grid. Submit a prompt; navigation animates to <code>/app/chat/&lt;id&gt;</code> with the prompt locked in place; assistant streams.</li>
+    <li>Settings → Members → invite a teammate by email; Settings → Profile → set timezone + display name.</li>
+    <li>Branded error page surfaces on <code>createError</code>. Help page reachable at <code>/help</code>. Analytics events flow to <code>analytics.events</code>.</li>
+    <li>Set <code>profiles.is_employee = true</code> on a user → <code>[Internal]</code> nav group surfaces with <code>/app/admin</code> + <code>/app/dev-tools</code>. Non-employees still get a 404 on those routes.</li>
+    <li>Flip to live Stripe by setting <code>STRIPE_SECRET_KEY</code> + price/webhook IDs and running <code>stripe listen</code>; nothing else changes.</li>
+  </ol>
+</section>
+
+<footer>
+  Cosmo Uplift — implementation plan and source under <code>internal_docs/20260505_cosmo_uplift/</code>. Branch <code>cosmo-uplift</code>, commits <code>5f8acb3</code>, <code>8958da5</code>, <code>b221fc7</code>, <code>1ed82e8</code>.
+</footer>
+
+</div>
+</body>
+</html>

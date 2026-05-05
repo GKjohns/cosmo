@@ -459,6 +459,7 @@ The plan is six sprints. Each sprint is self-contained, ends with verification s
 - **Suggestion grid is generic, not branded.** Template's quick-chats reference Nuxt + VueUse + Tailwind; cosmo's are generic ops prompts ("Summarize this week's open items", "What's blocked right now?"). Per-project, swap the array.
 - **Recent-chats sidebar uses `useFetch('/api/chats', { key: 'chats', server: false, lazy: true })`** — keyed so the empty-state's `refreshNuxtData('chats')` invalidates the sidebar after a new chat is created. Server-only auth means the fetch only fires client-side once the cookie is in play, which avoids a 401 during marketing SSR.
 - **No live-Supabase verification.** Same constraint as Sprints 1–5. The migration is written, the endpoints branch correctly when env vars are present, the routes compile and 401 cleanly without auth — but a real round-trip (insert chat → stream → persist → reload) needs a live project.
+- **Same `_render_chrome=1` escape hatch as Sprints 2–5** (re-added to `auth.global.ts` and the dashboard onboarding watcher to capture the chat empty-state screenshot, then reverted before completing the sprint). The empty state renders identically whether reached via real auth or the bypass.
 
 #### Tasks
 
@@ -496,7 +497,10 @@ The plan is six sprints. Each sprint is self-contained, ends with verification s
 - [x] `[view-transition-name:chat-prompt]` applied to both the empty-state prompt and the live-chat prompt so the navigation animates smoothly.
 - [x] Sidebar wires recent chats via `useFetch('/api/chats', { key: 'chats', ... })`, refreshed by `refreshNuxtData('chats')` after `POST /api/chats` succeeds.
 - [ ] **Pending live Supabase project:** end-to-end smoke (sign in → empty state → submit → navigate → stream → persist → reload `[id]` and rehydrate). Same constraint as Sprints 1–5.
-- [ ] **Pending live Supabase project:** Playwright screenshots (empty state, mid-stream, post-stream with reasoning + tool parts, thread list). The parent plan's next task picks this up.
+- [x] Playwright screenshot of `/app/chat` empty state captured: `internal_docs/20260505_cosmo_uplift/verification/screenshots/sprint6_chat_empty.png`. Greeting ("Good afternoon"), 6 generic suggestion chips, prompt input with `[view-transition-name:chat-prompt]`, sidebar AI entry active.
+- [x] `/app/ai` redirect verified — visiting it lands on `/app/chat` (URL rewritten as expected).
+- [x] `GET /api/chats` and `POST /api/chats` correctly return 401 without auth (`requireUserId` guard) — the wiring half of the empty-state transition is sound.
+- [ ] **Pending live Supabase + OpenAI key:** mid-stream and post-stream screenshots (with reasoning + tool parts), thread-list-with-recents in sidebar. Same gating pattern as Sprints 1–5.
 
 ---
 
