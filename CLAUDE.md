@@ -42,7 +42,29 @@ When you clone cosmo into a new project:
 
 1. Replace `{{PROJECT_REF}}` in `.cursor/mcp.json` with the new Supabase project ref.
 2. Update brand copy in `package.json`, `README.md`, `nuxt.config.ts` (head meta), and `app/components/AppLogo.vue`.
-3. Run the migrations under `supabase/migrations/` against the new Supabase project (`001_initial.sql` and `002_orgs_and_invitations.sql` ship today).
+3. Run the migrations under `supabase/migrations/` against the new Supabase project (`001`-`007` ship today).
+
+## Billing — stub by default
+
+`/app/billing` boots green with no Stripe keys set. Every endpoint and the
+`useSubscription` composable consult `isStripeConfigured()` (server) /
+`subscription.stripeConfigured` (client) and short-circuit to canned responses;
+the `stripe` SDK is `await import()`-ed only inside the live branch.
+
+To flip a project to live Stripe:
+
+1. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`,
+   `STRIPE_PRICE_ID` in `.env`.
+2. Add a third process to the dev script for the webhook forwarder (cosmo
+   does NOT ship this on by default — most clones don't need it day one):
+   ```
+   stripe listen --forward-to localhost:3000/api/stripe/webhook
+   ```
+   Easiest path: add it to `package.json` as a separate `dev:stripe` script and
+   run it in another terminal, or extend `concurrently` with a third entry.
+3. Install `@stripe/stripe-js` if you want the embedded Checkout component to
+   actually mount (the cosmo component lazy-imports it and falls back to a
+   demo banner otherwise).
 
 ## TODOs (deferred from earlier sprints)
 

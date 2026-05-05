@@ -39,6 +39,12 @@ export function useNavigation() {
         active: route.path.startsWith('/app/editor')
       },
       {
+        label: 'Billing',
+        icon: 'i-lucide-credit-card',
+        to: '/app/billing',
+        active: route.path.startsWith('/app/billing')
+      },
+      {
         label: 'Settings',
         icon: 'i-lucide-settings',
         to: '/app/settings',
@@ -100,6 +106,12 @@ export function useNavigation() {
             label: 'Team settings',
             icon: 'i-lucide-users',
             to: '/app/settings/members'
+          },
+          {
+            id: '/app/billing',
+            label: 'Billing',
+            icon: 'i-lucide-credit-card',
+            to: '/app/billing'
           }
         ]
       }

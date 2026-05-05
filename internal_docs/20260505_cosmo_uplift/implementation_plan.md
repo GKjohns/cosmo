@@ -1,7 +1,7 @@
 # Cosmo Uplift — Implementation Plan
 
 **Created:** May 5, 2026
-**Status:** In progress — 4 of 6 sprints complete (Sprints 1–4 ✅, Sprints 5–6 pending)
+**Status:** In progress — 5 of 6 sprints complete (Sprints 1–5 ✅, Sprint 6 pending)
 **Branch:** `cosmo-uplift` (not merged to main; not pushed)
 **Context:** Cosmo is the "batteries-included" Nuxt 4 + Supabase + Inngest starter that every Monument Labs project clones from. It has shipped a lot of demo chrome but the actual batteries — auth, real data, email, billing, analytics, admin — are missing or fake. Daylight, Margin, ARIA, and AIR-Bot have each matured pieces that should now be promoted back into the starter so future projects begin where current projects ended up, not where they started.
 
@@ -11,15 +11,14 @@
 
 Picking this up in a fresh Claude session? Read this first.
 
-**Done (Sprints 1–4):**
+**Done (Sprints 1–5):**
 - Real Supabase auth: `@nuxtjs/supabase` with `redirect: false` + Daylight's `auth.global.ts` middleware. Auth pages at `app/pages/auth/{login,signup,confirm}.vue`. Server-side `requireUserId` in `server/utils/auth.ts`.
 - Multi-tenancy: ARIA's `useOrganization` + `useNavigation` + `TeamsMenu` + onboarding + invitations + settings/{profile,members}. Migration `002_orgs_and_invitations.sql` adds `is_employee`/`is_test_user`/`timezone`/`avatar_url`/`display_name` to `profiles`.
 - Platform utils: Resend wrapper (`server/utils/email.ts`) with dedupe + dev-gate; analytics events pipeline (`analytics` schema, `log_event` SECURITY DEFINER, `analytics_reader` role); `server/utils/aiModels.ts` registry; design-token CSS; `app/error.vue`; `app/pages/help.vue`. Migrations `003_email_sends.sql` + `004_analytics.sql`.
 - Admin + ops: `/app/admin` (chartless KPI/funnel/feedback/activity), `/app/dev-tools` (probes + test-user CRUD + send-test-email), `app/middleware/employee.ts` (404, not redirect), `requireEmployee` helper, `FeedbackForm.vue` + migration `005_feedback.sql`. `[Internal]` nav group surfaces when `isEmployee`.
+- Billing scaffold — stub-by-default. `server/utils/billing.ts` with `isStripeConfigured()` switch; `server/utils/subscription.ts` with `getUserTier` + quota gates. Endpoints `server/api/stripe/{create-checkout-session,create-portal-session,webhook}.post.ts` lazy-import the `stripe` SDK only inside the live branch. `useSubscription` / `usePlans` composables, `/app/billing` page (with employee tier-switcher), `UpgradePrompt` / `UsageDashboard` / `UsageHint` / `EmbeddedCheckout` components. Migrations `006_subscriptions.sql` (subscriptions table + plan-sync trigger) + `007_usage_tracking.sql` (plan_limits, usage_summaries, helper RPCs, item-counter trigger). `profiles.test_tier` powers the employee tier-switcher in stub mode.
 
-**Next up (Sprint 5):** Billing scaffold — stub-by-default. Goal: `/app/billing` renders with no Stripe env vars set; real Stripe activates only when `STRIPE_SECRET_KEY` is set. Migrations `006_subscriptions.sql` + `007_usage_tracking.sql`. `server/utils/billing.ts` with `isStripeConfigured()` switch. Endpoints `server/api/stripe/{create-checkout-session,create-portal-session,webhook}.post.ts` (lazy-import the `stripe` SDK only inside the live branch). `useSubscription`, billing page, `UpgradePrompt`, `UsageDashboard`, `UsageHint`. **Do not** turn on `stripe listen` in the dev script — keep the default lean. See full task list under "Sprint 5" below.
-
-**Then Sprint 6:** Chat upgrade. **Mirror <https://github.com/nuxt-ui-templates/chat/tree/main/>** as the canonical reference (it's the stablest implementation). Cross-reference AIR-Bot's `MessageContent.vue` for parts-renderer details. **Watch the empty-state → uuid transition** — see Sprint 6's intro note about race conditions and double-submit protection. Drops cosmo's unused `ai_conversations`/`ai_messages` tables in a new migration (`008_chats.sql`); creates a flatter `chats` table with `messages jsonb`.
+**Next up (Sprint 6):** Chat upgrade. **Mirror <https://github.com/nuxt-ui-templates/chat/tree/main/>** as the canonical reference (it's the stablest implementation). Cross-reference AIR-Bot's `MessageContent.vue` for parts-renderer details. **Watch the empty-state → uuid transition** — see Sprint 6's intro note about race conditions and double-submit protection. Drops cosmo's unused `ai_conversations`/`ai_messages` tables in a new migration (`008_chats.sql`); creates a flatter `chats` table with `messages jsonb`.
 
 **Pre-existing typecheck errors (do not own):** `app/components/home/{HomeSales,HomeStats}.vue`, `app/components/editor/{CollaborationUsers,ImageUploadNode}.vue`, `app/composables/useEditorMentions.ts`, `app/pages/app/ai.vue`. The last one (`ai.vue`) is replaced wholesale in Sprint 6; the rest are dashboard demo + editor scaffolding that get cleaned up only when a project picks them up.
 
@@ -386,9 +385,22 @@ The plan is six sprints. Each sprint is self-contained, ends with verification s
 
 ---
 
-### Sprint 5: Billing scaffold (stub-by-default, real Stripe when keys set)
+### Sprint 5: Billing scaffold (stub-by-default, real Stripe when keys set) — [Complete]
 **Goal:** A new project ships with the *shape* of a billing flow — `subscriptions` table, `useSubscription`, billing page, webhook endpoint, plan-limits, `UpgradePrompt` — but cosmo boots and runs with **no Stripe keys configured**, returning canned tier data and stubbed checkout responses. Projects flip to live Stripe by setting env vars; nothing else changes.
 **Estimated effort:** 4–5 hours
+
+#### Deviations
+- **Plan-limits resource map is generic** (`items`, `ai_tokens`, `storage_bytes`), not Margin-specific (`notebooks`, `analysis_briefs`, `kernel_seconds`). Cosmo's only first-class user resource is `items`; the others are commented placeholders inside `007_usage_tracking.sql` so future projects extend with `notebooks_limit integer, …` etc. The auto-counter trigger ships only for `items`; project-specific triggers live as commented-out templates in the same file.
+- **`profiles.test_tier` over a separate `dev_tier_overrides` table.** A nullable text column on `profiles` is the smallest-possible thing that lets `getUserTier` return an employee-only override in stub mode. No migration overhead, no extra RLS policy.
+- **`getUserTier(supabase, userId)` instead of Daylight's `getUserTier(event, userId)`.** The supabase-client shape is what the cosmo `requireUserId` family already uses; the event arg is redundant once you have a client. Composable + endpoint both pass the resolved client.
+- **Subscriptions are scoped to organizations, not users.** Margin's subscriptions row carries `organization_id`; Daylight's carries `user_id`. Cosmo follows Margin because the multi-tenancy model from Sprint 2 is org-first — a user upgrades the active org's plan, not a personal plan. Per-user billing would have re-litigated Sprint 2 RLS for no architectural gain.
+- **Embedded Checkout uses a *lazy* `await import('@stripe/stripe-js')`** and falls back to the demo banner if the dep is missing. We do *not* ship `@stripe/stripe-js` as a cosmo dep — projects that flip to live install it explicitly. This keeps the cold path lean (and avoids polluting `node_modules` for clones that never go live). Documented in `EmbeddedCheckout.vue`'s comment.
+- **`stripe` *is* a cosmo dep** (the server SDK). Lazy-imported inside the live branch of every endpoint, but installed unconditionally so the `await import('stripe')` resolves the moment a project sets `STRIPE_SECRET_KEY`. The plan called this acceptable; verified the dep adds ~10 MB to `node_modules` but zero ms to cold-boot in stub mode.
+- **No `_render_chrome=1` escape hatch this time.** The billing page renders identically in stub mode, so chrome is verifiable by visiting `/app/billing` once a project's auth is live. The Sprint 4 escape hatch was a one-off.
+- **`runtimeConfig.stripePriceId`** added (the Margin shape was `runtimeConfig.public.stripePriceId`); `STRIPE_PRICE_ID` only matters server-side because the checkout endpoint constructs the session, so private is the right scope.
+- **Webhook lacks `userId`** because Stripe events have no caller. `logAnalyticsEvent` is invoked with `{ serviceRole: true, actorId: null }` so the events row is attributed to the system, not a user. Mirrors Margin's behavior, just adapted to cosmo's `logAnalyticsEvent` opts shape.
+- **Live-mode dev script unchanged.** Cosmo ships the lean `concurrently --names nuxt,inngest` default. Projects that flip to live add `stripe listen` themselves; the recipe is documented in root `CLAUDE.md` ("Billing — stub by default" section).
+- **No live-Supabase verification.** Same constraint as Sprints 1–4. The migrations are written and the endpoints branch correctly between stub and live; running them against a real project + verifying the trigger flips `organizations.plan_name` is gated on a project actually wiring its Supabase ref.
 
 #### Tasks
 
@@ -415,11 +427,14 @@ The plan is six sprints. Each sprint is self-contained, ends with verification s
   - Add `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY` to `.env.example` as commented placeholders with a "leave blank to run in stub mode" note.
 
 #### Verification
-- [ ] With **no** Stripe env vars set: `npm run dev` boots, `/app/billing` renders the free plan, "Upgrade" click shows the demo-checkout banner with the toast "Stripe not configured — set `STRIPE_SECRET_KEY` to enable real checkout." No console errors.
-- [ ] Employee tier-switcher in billing page lets you flip free→pro→alpha and the gates respond (works in stub mode via `profiles.test_tier`).
-- [ ] `UpgradePrompt` renders correctly when limits are hit (drive a usage counter past its limit).
-- [ ] **Smoke the live path** in this sprint only: set a fake `STRIPE_SECRET_KEY=sk_test_*` env var locally and verify the endpoints reach the live branch (no real network call needed — just confirm the `await import('stripe')` resolves and the code path branches).
-- [ ] Playwright screenshots: billing page (free), billing page after employee tier-switch to pro, demo-checkout banner state.
+- [x] `npx nuxi typecheck` clean for Sprint 5's surface (only Sprint-1-documented pre-existing errors remain; none introduced by Sprint 5).
+- [x] `npm run dev` boots clean (Nuxt + inngest both running, no module-resolution errors from a missing `stripe` dep). Verified — `stripe` is installed and the lazy `await import('stripe')` resolves.
+- [x] `isStripeConfigured()` correctly returns `false` with no env vars and `true` when `STRIPE_SECRET_KEY` is set. Verified at the Node boundary.
+- [x] **Smoked the live-path branch:** with a fake `STRIPE_SECRET_KEY=sk_test_*`, `await import('stripe')` resolves and `new Stripe(secret)` constructs without throwing (no network calls made — just code-path branching).
+- [ ] With **no** Stripe env vars set: `/app/billing` renders the free plan, "Upgrade" click shows the demo-checkout banner with the toast "Stripe not configured — set `STRIPE_SECRET_KEY` to enable real checkout." **Pending live Supabase project** (the page is gated by `auth.global.ts` so cannot be hit anonymously).
+- [ ] Employee tier-switcher in billing page lets you flip free→pro→alpha and the gates respond (writes `profiles.test_tier`; resolver picks it up). **Pending live Supabase project.**
+- [ ] `UpgradePrompt` renders correctly when limits are hit. **Pending live Supabase + a free-tier user with > 25 items.**
+- [ ] Playwright screenshots: billing page (free), billing page after employee tier-switch to pro, demo-checkout banner state. **Pending live Supabase.** Same pattern as Sprints 1–4.
 
 ---
 

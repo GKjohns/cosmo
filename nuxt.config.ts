@@ -137,9 +137,16 @@ export default defineNuxtConfig({
     resendAlertTo: process.env.RESEND_ALERT_TO,
     resendAllowSend: process.env.RESEND_ALLOW_SEND,
 
+    // Stripe — leave empty to run in stub mode. `isStripeConfigured()`
+    // checks `process.env.STRIPE_SECRET_KEY` directly (works in workers too).
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    stripePriceId: process.env.STRIPE_PRICE_ID,
+
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
-      supabaseAnonKey: process.env.SUPABASE_ANON_KEY
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
     }
   },
 
