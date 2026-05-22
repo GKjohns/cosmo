@@ -1,6 +1,7 @@
 import { serverSupabaseClient } from '#supabase/server'
 import { getOptionalUser } from '../utils/auth'
 import { logAnalyticsEvent } from '../utils/analytics'
+import { isDemoMode } from '../utils/runtimeKeys'
 
 interface FeedbackBody {
   q1_trying_to_do?: string | null
@@ -24,8 +25,6 @@ function normalizeOptionalText(value: unknown): string | null {
  * inserts can only set `user_id` to themselves.
  */
 export default defineEventHandler(async (event) => {
-  const supabase = await serverSupabaseClient(event)
-  const userId = await getOptionalUser(event, supabase)
   const body = await readBody<FeedbackBody>(event)
 
   const q1 = normalizeOptionalText(body?.q1_trying_to_do)
@@ -35,6 +34,14 @@ export default defineEventHandler(async (event) => {
   if (!q1 && !q2 && !q3) {
     throw createError({ statusCode: 400, statusMessage: 'Please answer at least one question' })
   }
+
+  // Demo mode: accept the submission, log nothing, return a fake id.
+  if (isDemoMode(event)) {
+    return { success: true, id: 'demo-feedback' }
+  }
+
+  const supabase = await serverSupabaseClient(event)
+  const userId = await getOptionalUser(event, supabase)
 
   // Only store email + allow_contact when anonymous; otherwise the user_id is
   // the source of truth.

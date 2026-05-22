@@ -14,6 +14,7 @@ import { getRequestIP } from 'h3'
 import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getOptionalUser } from './auth'
+import { isDemoMode } from './runtimeKeys'
 
 interface LogOptions {
   /**
@@ -44,6 +45,9 @@ export function logAnalyticsEvent(
   context: Record<string, unknown> = {},
   opts: LogOptions = {}
 ): void {
+  // Demo mode: no Supabase to log into. Drop silently so console isn't noisy.
+  if (isDemoMode(event)) return
+
   // Don't await — the caller continues immediately.
   void doLog(event, eventType, payload, context, opts).catch((err) => {
     console.error('[analytics] Backend log failed:', eventType, err)

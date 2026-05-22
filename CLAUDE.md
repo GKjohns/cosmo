@@ -29,10 +29,20 @@ Cosmo does **not** ship per-project mirrors of those docs. The central versions 
 
 ```bash
 npm install
-cp .env.example .env
-# fill in SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY
 npm run dev
 ```
+
+Cosmo boots clean with no `.env`. Every external dependency (Supabase,
+OpenAI, Stripe, Resend, Inngest) is optional — `server/utils/runtimeKeys.ts`
+holds the "configured?" checks every endpoint reads. When Supabase isn't
+configured, `requireUserId` returns the fixture demo user and the
+`/api/app/*` + `/api/chats*` endpoints short-circuit to canned data /
+an in-memory chat store. The auth middleware lets `/app/*` through without
+a session.
+
+To turn on AI for the demo, drop `AI_GATEWAY_API_KEY=…` in `.env` and
+restart. To turn on real Supabase, set `SUPABASE_URL` / `SUPABASE_ANON_KEY` /
+`SUPABASE_SERVICE_ROLE_KEY` and run the SQL under `supabase/migrations/`.
 
 The `dev` script boots Nuxt and `inngest-cli` in parallel via `concurrently`.
 

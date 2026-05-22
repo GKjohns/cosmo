@@ -9,6 +9,7 @@ const colorMode = useColorMode()
 const appConfig = useAppConfig()
 const supabase = useSupabaseClient()
 const router = useRouter()
+const isDemo = useDemoMode()
 const { displayName, avatarUrl, email, initial } = useProfile()
 
 const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose', 'slate']
@@ -21,7 +22,10 @@ const userAvatar = computed(() => ({
 }))
 
 async function logOut() {
-  await supabase.auth.signOut()
+  // Demo mode has no Supabase session to sign out of — just bounce home.
+  if (!isDemo.value) {
+    await supabase.auth.signOut()
+  }
   await router.push('/')
 }
 

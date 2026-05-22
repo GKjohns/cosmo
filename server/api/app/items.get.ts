@@ -1,10 +1,15 @@
 import { serverSupabaseClient } from '#supabase/server'
+import { isDemoMode } from '../../utils/runtimeKeys'
 
 /**
  * List items scoped to the caller's active organization.
  * Replaces the deleted `customers.get.ts` fake from Sprint 1.
  */
 export default defineEventHandler(async (event) => {
+  if (isDemoMode(event)) {
+    return []
+  }
+
   const supabase = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
   const admin = serverSupabaseAdmin()

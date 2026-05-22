@@ -8,8 +8,21 @@
 import { serverSupabaseClient } from '#supabase/server'
 import { getUserTier } from '../../utils/subscription'
 import { isStripeConfigured } from '../../utils/billing'
+import { isDemoMode } from '../../utils/runtimeKeys'
 
 export default defineEventHandler(async (event) => {
+  if (isDemoMode(event)) {
+    return {
+      tier: 'alpha' as const,
+      status: 'active',
+      cancelAtPeriodEnd: false,
+      currentPeriodEnd: null,
+      stripeCustomerId: null,
+      stripeConfigured: false,
+      itemCount: 0
+    }
+  }
+
   const supabase = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
 

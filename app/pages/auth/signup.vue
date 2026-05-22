@@ -18,12 +18,18 @@ const state = reactive({
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const router = useRouter()
+const isDemo = useDemoMode()
 const loading = ref(false)
 const formError = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 const showEmailForm = ref(false)
 const initialEmail = ref('')
 const emailInputRef = ref<any | null>(null)
+
+// Demo mode short-circuit: no Supabase, no signup — just walk to /app.
+if (isDemo.value && import.meta.client) {
+  navigateTo('/app')
+}
 
 async function expandEmailForm() {
   showEmailForm.value = true

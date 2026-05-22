@@ -6,15 +6,25 @@
  * else's row. Sprint 6.
  */
 import { serverSupabaseClient } from '#supabase/server'
+import { isDemoMode } from '../../utils/runtimeKeys'
+import { deleteDemoChat, getDemoChat } from '../../utils/demoStore'
 
 export default defineEventHandler(async (event) => {
-  const supabase = await serverSupabaseClient(event)
-  const userId = await requireUserId(event, supabase)
-
   const id = getRouterParam(event, 'id')
   if (!id) {
     throw createError({ statusCode: 400, statusMessage: 'Chat id is required.' })
   }
+
+  if (isDemoMode(event)) {
+    if (!getDemoChat(id)) {
+      throw createError({ statusCode: 404, statusMessage: 'Chat not found.' })
+    }
+    deleteDemoChat(id)
+    return { ok: true }
+  }
+
+  const supabase = await serverSupabaseClient(event)
+  const userId = await requireUserId(event, supabase)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)

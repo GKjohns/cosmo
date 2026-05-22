@@ -31,7 +31,11 @@ interface ProfileResponse {
 
 export function useProfile() {
   const user = useSupabaseUser()
-  const getUserId = () => (user.value as any)?.id || (user.value as any)?.sub
+  const isDemo = useDemoMode()
+  const getUserId = () => {
+    if (isDemo.value) return 'demo-user'
+    return (user.value as any)?.id || (user.value as any)?.sub
+  }
 
   const profile = useState<Profile | null>('user-profile', () => null)
   const isLoading = ref(false)
@@ -88,8 +92,13 @@ export function useProfile() {
     }
   }
 
-  // Auto-fetch when the auth user appears.
+  // Auto-fetch when the auth user appears, or immediately in demo mode.
+  if (isDemo.value && !isFetched.value && import.meta.client) {
+    void fetchProfile()
+  }
+
   watch(user, async (newUser) => {
+    if (isDemo.value) return
     const userId = (newUser as any)?.id || (newUser as any)?.sub
     if (userId) {
       if (!isFetched.value) {
@@ -112,7 +121,7 @@ export function useProfile() {
     if (oauthMeta?.full_name) return oauthMeta.full_name
     if (oauthMeta?.name) return oauthMeta.name
 
-    return user.value?.email || 'Account'
+    return user.value?.email || (isDemo.value ? 'Demo User' : 'Account')
   })
 
   // Avatar precedence: profile.avatar_url → OAuth metadata → empty.
@@ -123,7 +132,7 @@ export function useProfile() {
     return oauthMeta?.avatar_url || oauthMeta?.picture || ''
   })
 
-  const email = computed(() => user.value?.email || '')
+  const email = computed(() => user.value?.email || (isDemo.value ? 'demo@cosmo.local' : ''))
 
   const initial = computed(() => {
     const source = displayName.value || email.value || ''

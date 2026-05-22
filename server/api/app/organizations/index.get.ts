@@ -1,9 +1,15 @@
 import { serverSupabaseClient } from '#supabase/server'
+import { isDemoMode } from '../../../utils/runtimeKeys'
+import { DEMO_MEMBERSHIP } from '../../../utils/demoStore'
 
 /**
  * List the orgs the calling user is a member of.
  */
 export default defineEventHandler(async (event) => {
+  if (isDemoMode(event)) {
+    return [DEMO_MEMBERSHIP]
+  }
+
   const supabase = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
   const admin = serverSupabaseAdmin()

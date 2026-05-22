@@ -1,5 +1,7 @@
 import * as z from 'zod'
 import { serverSupabaseClient } from '#supabase/server'
+import { isDemoMode } from '../../utils/runtimeKeys'
+import { DEMO_PROFILE } from '../../utils/demoStore'
 
 const updateProfileSchema = z.object({
   display_name: z.string().trim().min(2).max(120).optional(),
@@ -31,6 +33,16 @@ function normalizeSkills(skills?: string[]): string[] {
  * Update the calling user's profile.
  */
 export default defineEventHandler(async (event) => {
+  if (isDemoMode(event)) {
+    // Demo mode is read-only; pretend the patch worked and echo the demo profile.
+    const body = await readBody(event).catch(() => ({}))
+    const parsed = updateProfileSchema.safeParse(body)
+    if (!parsed.success) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid profile update.' })
+    }
+    return { profile: { ...DEMO_PROFILE, ...parsed.data, updated_at: new Date().toISOString() } }
+  }
+
   const supabase = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
   const body = await readBody(event)

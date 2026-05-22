@@ -1,10 +1,20 @@
 import { serverSupabaseClient } from '#supabase/server'
+import { isDemoMode } from '../../utils/runtimeKeys'
+import { DEMO_MEMBERSHIP, DEMO_ORGANIZATION, DEMO_PROFILE } from '../../utils/demoStore'
 
 /**
  * Returns the current user's profile + org memberships in one shot.
  * Drives `useOrganization()` (org switcher + needsOnboarding watcher).
  */
 export default defineEventHandler(async (event) => {
+  if (isDemoMode(event)) {
+    return {
+      profile: { id: DEMO_PROFILE.id, display_name: DEMO_PROFILE.display_name, avatar_url: DEMO_PROFILE.avatar_url },
+      memberships: [DEMO_MEMBERSHIP],
+      organizations: [DEMO_ORGANIZATION]
+    }
+  }
+
   const supabase = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
   const admin = serverSupabaseAdmin()

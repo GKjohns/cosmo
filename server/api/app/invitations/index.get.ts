@@ -1,10 +1,15 @@
 import { serverSupabaseClient } from '#supabase/server'
+import { isDemoMode } from '../../../utils/runtimeKeys'
 
 /**
  * List pending invitations for the caller's active org. Admin-only.
  * Sweeps any past-due invitations to `expired` status before returning.
  */
 export default defineEventHandler(async (event) => {
+  if (isDemoMode(event)) {
+    return []
+  }
+
   const supabase = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
   const admin = serverSupabaseAdmin()

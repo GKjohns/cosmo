@@ -1,5 +1,6 @@
 import { serverSupabaseServiceRole, serverSupabaseClient } from '#supabase/server'
 import { requireEmployee } from '../../utils/auth'
+import { isDemoMode } from '../../utils/runtimeKeys'
 
 /**
  * Admin-dashboard aggregator. Parallel `Promise.all` over `public` + `analytics`
@@ -127,7 +128,28 @@ export interface AdminStatsResponse {
   }
 }
 
+const EMPTY_RESPONSE: AdminStatsResponse = {
+  generatedAt: new Date(0).toISOString(),
+  headline: { realUsers: 0, activeUsers: 0, contentCreated: 0, activationRate: 0 },
+  recentSignups: [],
+  funnel: [
+    { name: 'Signed Up', count: 0, percentage: 100 },
+    { name: 'Visited App', count: 0, percentage: 0 },
+    { name: 'Logged Events', count: 0, percentage: 0 },
+    { name: 'Created Content', count: 0, percentage: 0 }
+  ],
+  feedback: [],
+  activityFeed: [],
+  errors: [],
+  topEventTypes: [],
+  summary: { totalUsers: 0, totalOrganizations: 0, totalItems: 0, totalAnalyticsEvents: 0, totalFeedback: 0 }
+}
+
 export default defineEventHandler(async (event): Promise<AdminStatsResponse> => {
+  if (isDemoMode(event)) {
+    return { ...EMPTY_RESPONSE, generatedAt: new Date().toISOString() }
+  }
+
   const supabase = await serverSupabaseClient(event)
   await requireEmployee(event, supabase)
 

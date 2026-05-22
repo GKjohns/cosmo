@@ -33,6 +33,8 @@ import { serverSupabaseClient } from '#supabase/server'
 import { extractTextFromParts, normalizeMessages, serializeMessages } from '../../utils/chats'
 import { createAITools } from '../../utils/ai-tools'
 import { serverSupabaseAdmin } from '../../utils/supabase'
+import { isDemoMode } from '../../utils/runtimeKeys'
+import { appendDemoChatMessages, getDemoChat, setDemoChatTitle } from '../../utils/demoStore'
 
 interface ChatRequestBody {
   messages?: UIMessage[]
@@ -47,9 +49,6 @@ const REASONING_MODELS = new Set<string>([
 ])
 
 export default defineEventHandler(async (event) => {
-  const supabase = await serverSupabaseClient(event)
-  const userId = await requireUserId(event, supabase)
-
   const id = getRouterParam(event, 'id')
   if (!id) {
     throw createError({ statusCode: 400, statusMessage: 'Chat id is required.' })
@@ -61,24 +60,39 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Messages are required.' })
   }
 
-  // Verify the chat exists + belongs to this user. We re-load existing
-  // messages so the id-diff in `onFinish` is correct.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: existingChat, error: loadError } = await (supabase as any)
-    .from('chats')
-    .select('id, user_id, org_id, title, messages')
-    .eq('id', id)
-    .maybeSingle()
+  const demo = isDemoMode(event)
 
-  if (loadError) {
-    console.error(`[POST /api/chats/${id}] Failed to load chat`, loadError)
-    throw createError({ statusCode: 500, statusMessage: 'Failed to load chat.' })
-  }
-  if (!existingChat) {
-    throw createError({ statusCode: 404, statusMessage: 'Chat not found.' })
-  }
-  if (existingChat.user_id !== userId) {
-    throw createError({ statusCode: 403, statusMessage: 'You do not own this chat.' })
+  // Verify chat exists. Real path consults Supabase; demo path the in-memory store.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let supabase: any = null
+  let userId: string | null = null
+
+  if (demo) {
+    const existing = getDemoChat(id)
+    if (!existing) {
+      throw createError({ statusCode: 404, statusMessage: 'Chat not found.' })
+    }
+  } else {
+    supabase = await serverSupabaseClient(event)
+    userId = await requireUserId(event, supabase)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existingChat, error: loadError } = await (supabase as any)
+      .from('chats')
+      .select('id, user_id, org_id, title, messages')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (loadError) {
+      console.error(`[POST /api/chats/${id}] Failed to load chat`, loadError)
+      throw createError({ statusCode: 500, statusMessage: 'Failed to load chat.' })
+    }
+    if (!existingChat) {
+      throw createError({ statusCode: 404, statusMessage: 'Chat not found.' })
+    }
+    if (existingChat.user_id !== userId) {
+      throw createError({ statusCode: 403, statusMessage: 'You do not own this chat.' })
+    }
   }
 
   const runtimeConfig = useRuntimeConfig(event)
@@ -111,17 +125,20 @@ export default defineEventHandler(async (event) => {
     : openai!(titleModelId.replace(/^openai\//, ''))
 
   // Tools — wired to the user's active org so list_items / get_dashboard_stats
-  // see the right slice. If the user has no org yet we just skip tools.
+  // see the right slice. Demo mode has no live tables to query, so we skip
+  // tool wiring entirely.
   let tools: ReturnType<typeof createAITools> | undefined
-  try {
-    const membership = await requireActiveOrg(event, supabase, userId)
-    tools = createAITools({
-      supabase: serverSupabaseAdmin(),
-      organizationId: membership.organizationId
-    })
-  } catch {
-    // No active org — chat still works, just without org-scoped tools.
-    tools = undefined
+  if (!demo && supabase && userId) {
+    try {
+      const membership = await requireActiveOrg(event, supabase, userId)
+      tools = createAITools({
+        supabase: serverSupabaseAdmin(),
+        organizationId: membership.organizationId
+      })
+    } catch {
+      // No active org — chat still works, just without org-scoped tools.
+      tools = undefined
+    }
   }
 
   const stream = createUIMessageStream({
@@ -157,7 +174,40 @@ export default defineEventHandler(async (event) => {
       }))
     },
     onFinish: async ({ messages: responseMessages }) => {
-      // Re-fetch in case a concurrent turn updated the row.
+      // Demo path: persist into the in-memory store + maybe generate a title.
+      if (demo) {
+        const latest = getDemoChat(id)
+        if (!latest) return
+
+        const existingIds = new Set<string>(latest.messages.map(m => m.id))
+        const newMessages = responseMessages.filter(m => !existingIds.has(m.id))
+        if (newMessages.length === 0) return
+
+        appendDemoChatMessages(id, newMessages)
+        const updated = getDemoChat(id)
+        if (!updated) return
+
+        if (latest.title || !updated.messages.some(m => m.role === 'assistant')) return
+
+        const firstUserMessage = updated.messages.find(m => m.role === 'user')
+        const firstUserText = firstUserMessage ? extractTextFromParts(firstUserMessage.parts) : ''
+        if (!firstUserText) return
+
+        try {
+          const { text } = await generateText({
+            model: titleModel,
+            system: 'Generate a short chat title under 30 characters. Return plain text only with no quotes or punctuation beyond normal words.',
+            prompt: firstUserText
+          })
+          const title = text.trim().slice(0, 30)
+          if (title) setDemoChatTitle(id, title)
+        } catch (err) {
+          console.error(`[POST /api/chats/${id}] Title generation failed`, err)
+        }
+        return
+      }
+
+      // Live path — Supabase-backed persistence.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: latest } = await (supabase as any)
         .from('chats')

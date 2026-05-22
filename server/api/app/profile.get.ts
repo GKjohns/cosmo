@@ -1,4 +1,6 @@
 import { serverSupabaseClient } from '#supabase/server'
+import { isDemoMode } from '../../utils/runtimeKeys'
+import { DEMO_PROFILE } from '../../utils/demoStore'
 
 /**
  * Returns the calling user's profile + a `needsOnboarding` flag.
@@ -8,6 +10,10 @@ import { serverSupabaseClient } from '#supabase/server'
  * track an `onboarding_completed_at` timestamp; org membership is the proxy.
  */
 export default defineEventHandler(async (event) => {
+  if (isDemoMode(event)) {
+    return { profile: DEMO_PROFILE, needsOnboarding: false }
+  }
+
   const supabase = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
   const admin = serverSupabaseAdmin()

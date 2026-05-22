@@ -1,3 +1,18 @@
+/**
+ * Demo-first defaults: when Supabase env vars are missing, the @nuxtjs/supabase
+ * module still needs *something* to boot. We feed it harmless dummies; every
+ * server call site guards with `isSupabaseConfigured()` and short-circuits to
+ * canned demo data before touching the network. See `server/utils/runtimeKeys.ts`.
+ */
+const DEMO_SUPABASE_URL = 'https://demo.supabase.invalid'
+const DEMO_SUPABASE_ANON_KEY = 'demo-anon-key'
+
+const supabaseUrl = process.env.SUPABASE_URL || DEMO_SUPABASE_URL
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || DEMO_SUPABASE_ANON_KEY
+const isDemoMode = !process.env.SUPABASE_URL
+  || !process.env.SUPABASE_ANON_KEY
+  || !process.env.SUPABASE_SERVICE_ROLE_KEY
+
 export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
@@ -13,9 +28,9 @@ export default defineNuxtConfig({
   // `redirect: false` disables the module's auto-redirect, but the helpers
   // still consult `redirectOptions` — keep the two in sync.
   supabase: {
-    url: process.env.SUPABASE_URL,
-    key: process.env.SUPABASE_ANON_KEY,
-    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    url: supabaseUrl,
+    key: supabaseAnonKey,
+    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || DEMO_SUPABASE_ANON_KEY,
     redirect: false,
     redirectOptions: {
       login: '/auth/login',
@@ -144,9 +159,12 @@ export default defineNuxtConfig({
     stripePriceId: process.env.STRIPE_PRICE_ID,
 
     public: {
-      supabaseUrl: process.env.SUPABASE_URL,
-      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+      supabaseUrl: supabaseUrl,
+      supabaseAnonKey: supabaseAnonKey,
+      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+      // Surfaces "no real keys" to the client so middleware / composables /
+      // pages can short-circuit. Mirrors `isDemoMode()` on the server.
+      demoMode: isDemoMode
     }
   },
 

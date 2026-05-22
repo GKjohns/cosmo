@@ -15,6 +15,8 @@
 import type { UIMessage } from 'ai'
 import { serverSupabaseClient } from '#supabase/server'
 import { createTextMessage, normalizeMessages, serializeMessages } from '../utils/chats'
+import { isDemoMode } from '../utils/runtimeKeys'
+import { createDemoChat } from '../utils/demoStore'
 
 interface ChatRequestBody {
   id?: string
@@ -23,9 +25,6 @@ interface ChatRequestBody {
 }
 
 export default defineEventHandler(async (event) => {
-  const supabase = await serverSupabaseClient(event)
-  const userId = await requireUserId(event, supabase)
-
   const body = await readBody<ChatRequestBody>(event)
   const chatId = body?.id?.trim() || crypto.randomUUID()
 
@@ -40,6 +39,13 @@ export default defineEventHandler(async (event) => {
   if (!userMessage || userMessage.role !== 'user') {
     throw createError({ statusCode: 400, statusMessage: 'A valid user message is required.' })
   }
+
+  if (isDemoMode(event)) {
+    return createDemoChat(chatId, userMessage)
+  }
+
+  const supabase = await serverSupabaseClient(event)
+  const userId = await requireUserId(event, supabase)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)

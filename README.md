@@ -31,12 +31,37 @@ Cosmo — Nuxt 4 + Supabase + Inngest starter. Clone it to bootstrap a new Monum
 
 ```bash
 npm install
-cp .env.example .env
-# Fill in your Supabase, OpenAI, and (optional) Inngest keys.
 npm run dev
 ```
 
-The `dev` script boots Nuxt and `inngest-cli` in parallel.
+That's it. Cosmo boots in **demo mode** with no keys configured: auth is
+mocked to a single demo user, every Supabase-backed endpoint short-circuits
+to canned data, and the chat surface lights up the moment you drop in a
+Vercel AI Gateway key. The `dev` script boots Nuxt and `inngest-cli` in
+parallel.
+
+### Turning on AI
+
+```bash
+cp .env.example .env
+# uncomment AI_GATEWAY_API_KEY and paste your Vercel AI Gateway key
+npm run dev
+```
+
+The chat endpoints and editor inline AI start streaming through the gateway
+without any other config. (Setting `OPENAI_API_KEY` instead also works —
+cosmo falls back to the OpenAI provider when the gateway key is missing.)
+
+### Turning on Supabase
+
+Set all three of `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and
+`SUPABASE_SERVICE_ROLE_KEY` in `.env`, then run the SQL under
+`supabase/migrations/` against the project. Real auth replaces the demo
+shim automatically.
+
+Stripe, Resend, and Inngest follow the same shape — uncomment the keys in
+`.env.example` to flip them live. The "configured?" detection lives in
+[`server/utils/runtimeKeys.ts`](server/utils/runtimeKeys.ts).
 
 ## Per-project setup
 

@@ -9,15 +9,25 @@
 import { serverSupabaseClient } from '#supabase/server'
 import type { Chat } from '../../utils/chats'
 import { normalizeMessages } from '../../utils/chats'
+import { isDemoMode } from '../../utils/runtimeKeys'
+import { getDemoChat } from '../../utils/demoStore'
 
 export default defineEventHandler(async (event): Promise<Chat> => {
-  const supabase = await serverSupabaseClient(event)
-  const userId = await requireUserId(event, supabase)
-
   const id = getRouterParam(event, 'id')
   if (!id) {
     throw createError({ statusCode: 400, statusMessage: 'Chat id is required.' })
   }
+
+  if (isDemoMode(event)) {
+    const chat = getDemoChat(id)
+    if (!chat) {
+      throw createError({ statusCode: 404, statusMessage: 'Chat not found.' })
+    }
+    return chat
+  }
+
+  const supabase = await serverSupabaseClient(event)
+  const userId = await requireUserId(event, supabase)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)

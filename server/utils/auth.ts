@@ -2,11 +2,13 @@ import { getCookie, getHeader } from 'h3'
 import { serverSupabaseUser } from '#supabase/server'
 import type { H3Event } from 'h3'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { DEMO_MEMBERSHIP_ID, DEMO_ORG_ID, DEMO_USER_ID, isDemoMode } from './runtimeKeys'
 
 /**
  * Resolve the current authenticated user ID.
  *
  * Order of precedence:
+ * - Demo mode (no Supabase configured) → fixture demo user.
  * - Authorization: Bearer <supabase_access_token> (explicit client auth)
  * - Cookie-based auth via Nuxt Supabase module (serverSupabaseUser)
  *
@@ -16,6 +18,10 @@ export async function resolveUserId(
   event: H3Event,
   supabase: SupabaseClient
 ): Promise<string | null> {
+  if (isDemoMode(event)) {
+    return DEMO_USER_ID
+  }
+
   // Prefer bearer token explicitly provided by the client.
   const authHeader = getHeader(event, 'authorization') || getHeader(event, 'Authorization')
   const bearerPrefix = 'Bearer '
@@ -126,6 +132,12 @@ export async function requireEmployee(
   event: H3Event,
   supabase: SupabaseClient
 ): Promise<string> {
+  if (isDemoMode(event)) {
+    // Demo fixture user is treated as an employee so dev-tools + admin
+    // surfaces remain reachable without a real profiles row.
+    return DEMO_USER_ID
+  }
+
   const userId = await requireUserId(event, supabase)
 
   const { data, error } = await supabase
@@ -158,6 +170,14 @@ export async function requireActiveOrg(
   supabase: SupabaseClient,
   userId: string
 ): Promise<OrgMembership> {
+  if (isDemoMode(event)) {
+    return {
+      membershipId: DEMO_MEMBERSHIP_ID,
+      organizationId: DEMO_ORG_ID,
+      role: 'admin'
+    }
+  }
+
   const requestedOrgId = getCookie(event, 'cosmo-org-id')
     || getHeader(event, 'x-organization-id')
 

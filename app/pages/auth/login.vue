@@ -19,11 +19,18 @@ const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const router = useRouter()
 const route = useRoute()
+const isDemo = useDemoMode()
 const loading = ref(false)
 const formError = ref<string | null>(null)
 const showEmailForm = ref(false)
 const initialEmail = ref('')
 const emailInputRef = ref<any | null>(null)
+
+// Demo mode short-circuit: no Supabase, no auth — just walk to /app.
+if (isDemo.value && import.meta.client) {
+  const redirect = (route.query.redirect as string | undefined) || '/app'
+  navigateTo(redirect)
+}
 
 async function expandEmailForm() {
   showEmailForm.value = true

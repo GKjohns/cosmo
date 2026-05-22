@@ -8,6 +8,8 @@
  * result set to the authenticated user.
  */
 import { serverSupabaseClient } from '#supabase/server'
+import { isDemoMode } from '../utils/runtimeKeys'
+import { listDemoChats } from '../utils/demoStore'
 
 export interface ChatListItem {
   id: string
@@ -16,6 +18,10 @@ export interface ChatListItem {
 }
 
 export default defineEventHandler(async (event): Promise<ChatListItem[]> => {
+  if (isDemoMode(event)) {
+    return listDemoChats().map(c => ({ id: c.id, title: c.title, updatedAt: c.updatedAt }))
+  }
+
   const supabase = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
 
