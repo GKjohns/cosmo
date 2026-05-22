@@ -15,7 +15,7 @@ import type { SharedV3ProviderOptions } from '@ai-sdk/provider'
  */
 export const MODELS = {
   /** Streaming chat surface — interactive UI, reasoning + tool calls. */
-  'default-chat': 'openai/gpt-5-mini',
+  'default-chat': 'anthropic/claude-sonnet-4.6',
   /** Short / latency-sensitive completions (editor inline AI, etc.). */
   'default-fast': 'openai/gpt-5-nano',
   /** Title generation after a chat thread settles; cheapest viable model. */
