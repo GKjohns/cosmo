@@ -76,6 +76,29 @@ $$;
 
 grant execute on function public.is_org_admin(uuid) to authenticated;
 
+-- Membership probe used by org-scoped SELECT policies. MUST be SECURITY DEFINER:
+-- a policy ON memberships that reads memberships inline re-triggers itself and
+-- Postgres raises "infinite recursion detected in policy for relation
+-- memberships". Running the read as the definer bypasses RLS on the inner query,
+-- which breaks the cycle. Any policy that needs "is the current user a member of
+-- org X?" should call this rather than inlining `exists (select … from memberships)`.
+create or replace function public.is_org_member(target_organization_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.memberships m
+    where m.organization_id = target_organization_id
+      and m.user_id = auth.uid()
+  )
+$$;
+
+grant execute on function public.is_org_member(uuid) to authenticated;
+
 -- ----------------------------------------------------------------------------
 -- 5. Tighten RLS on memberships + invitations to org-scoped reads.
 --
@@ -88,14 +111,7 @@ create policy "memberships_select_org_peers"
 on public.memberships
 for select
 to authenticated
-using (
-  exists (
-    select 1
-    from public.memberships my_m
-    where my_m.user_id = auth.uid()
-      and my_m.organization_id = memberships.organization_id
-  )
-);
+using (public.is_org_member(organization_id));
 
 drop policy if exists "memberships_insert_for_admins" on public.memberships;
 create policy "memberships_insert_for_admins"
@@ -120,6 +136,8 @@ to authenticated
 using (public.is_org_admin(organization_id));
 
 -- Profiles: org peers can read each other's profile (display_name, avatar_url).
+-- "their_m" is read under RLS (safe — memberships no longer self-recurses), and
+-- the "is the viewer in that org?" check goes through is_org_member (definer).
 drop policy if exists "profiles_select_org_peers" on public.profiles;
 create policy "profiles_select_org_peers"
 on public.profiles
@@ -128,11 +146,9 @@ to authenticated
 using (
   exists (
     select 1
-    from public.memberships my_m
-    join public.memberships their_m
-      on my_m.organization_id = their_m.organization_id
-    where my_m.user_id = auth.uid()
-      and their_m.user_id = profiles.id
+    from public.memberships their_m
+    where their_m.user_id = profiles.id
+      and public.is_org_member(their_m.organization_id)
   )
 );
 
