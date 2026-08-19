@@ -126,7 +126,7 @@ export default defineEventHandler(async (event) => {
   // see the right slice. Demo mode has no live tables to query, so we skip
   // tool wiring entirely.
   let tools: ReturnType<typeof createAITools> | undefined
-  if (!backend.demo && userId) {
+  if (backend.supabase && userId) {
     try {
       const membership = await requireActiveOrg(event, backend.supabase, userId)
       tools = createAITools({

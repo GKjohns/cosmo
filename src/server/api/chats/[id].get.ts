@@ -6,6 +6,7 @@
  *
  * Owner-only via RLS. Sprint 6.
  */
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { serverSupabaseClient } from '#supabase/server'
 import type { Chat } from '../../utils/chats'
 import { normalizeMessages } from '../../utils/chats'
@@ -26,11 +27,10 @@ export default defineEventHandler(async (event): Promise<Chat> => {
     return chat
   }
 
-  const supabase = await serverSupabaseClient(event)
+  const supabase: SupabaseClient = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('chats')
     .select('id, user_id, org_id, title, messages, created_at, updated_at')
     .eq('id', id)

@@ -204,21 +204,21 @@ footer {
 
   <h3>Login + signup</h3>
   <figure class="shot">
-    <img src="screenshots/sprint1_login.png" alt="Login page" loading="lazy">
+    <img src="screenshots/sprint1_login.webp" alt="Login page" loading="lazy">
     <figcaption>Daylight's compact email-then-expand pattern; split-screen brand panel; <code>auth.global.ts</code> middleware preserves the <code>?redirect=</code> query.</figcaption>
   </figure>
   <figure class="shot">
-    <img src="screenshots/sprint1_signup.png" alt="Signup page" loading="lazy">
+    <img src="screenshots/sprint1_signup.webp" alt="Signup page" loading="lazy">
     <figcaption>Signup page with the same split-screen chrome; <code>handle_new_user</code> trigger from <code>001_initial.sql</code> creates the profiles row server-side.</figcaption>
   </figure>
 
   <h3>Auth guard + home</h3>
   <figure class="shot">
-    <img src="screenshots/sprint1_redirect.png" alt="Login redirect with redirect query" loading="lazy">
+    <img src="screenshots/sprint1_redirect.webp" alt="Login redirect with redirect query" loading="lazy">
     <figcaption>Visiting <code>/app</code> while logged out bounces to <code>/auth/login?redirect=/app</code>. Cosmo doesn't have a literal <code>/app/index</code> route — <code>/app</code> is the index.</figcaption>
   </figure>
   <figure class="shot">
-    <img src="screenshots/sprint1_home.png" alt="Marketing home with Cosmo branding" loading="lazy">
+    <img src="screenshots/sprint1_home.webp" alt="Marketing home with Cosmo branding" loading="lazy">
     <figcaption>AEGIS branding demoted to neutral "Cosmo": <code>package.json</code>, <code>app.config.ts</code>, <code>AppLogo.vue</code>, <code>AppFooter.vue</code>, OG card, <code>app.vue</code> titleTemplate.</figcaption>
   </figure>
 
@@ -243,19 +243,19 @@ footer {
   <p class="meta">ARIA's <code>useOrganization</code>, <code>useNavigation</code>, <code>TeamsMenu</code>, onboarding, invitations, settings/{profile,members}. Migration <code>002_orgs_and_invitations.sql</code> adds <code>is_employee</code>, <code>is_test_user</code>, <code>timezone</code>, <code>avatar_url</code>, <code>display_name</code> to <code>profiles</code>.</p>
 
   <figure class="shot">
-    <img src="screenshots/sprint2_onboarding.png" alt="Onboarding screen" loading="lazy">
+    <img src="screenshots/sprint2_onboarding.webp" alt="Onboarding screen" loading="lazy">
     <figcaption>First-run onboarding through cosmo's auth split-screen layout (cleaner than ARIA's gradient-blob standalone). User without org gets routed here by the <code>needsOnboarding</code> watcher in <code>dashboard.vue</code>.</figcaption>
   </figure>
   <figure class="shot">
-    <img src="screenshots/sprint2_settings_profile.png" alt="Settings profile tab" loading="lazy">
+    <img src="screenshots/sprint2_settings_profile.webp" alt="Settings profile tab" loading="lazy">
     <figcaption>Flat profile form (display_name + role + current_focus + timezone). ARIA's PDF-import-to-profile + AI-context blob were stripped.</figcaption>
   </figure>
   <figure class="shot">
-    <img src="screenshots/sprint2_settings_team.png" alt="Settings team / members tab" loading="lazy">
+    <img src="screenshots/sprint2_settings_team.webp" alt="Settings team / members tab" loading="lazy">
     <figcaption>Members list, role admin/member, invitation creation. Invite path is <code>/auth/invitations/accept</code> (auth layout — fresh users with no org need to land somewhere they can authenticate, not somewhere that requires an active org).</figcaption>
   </figure>
   <figure class="shot">
-    <img src="screenshots/sprint2_dashboard_nav.png" alt="Dashboard sidebar navigation" loading="lazy">
+    <img src="screenshots/sprint2_dashboard_nav.webp" alt="Dashboard sidebar navigation" loading="lazy">
     <figcaption>Sidebar driven from <code>useNavigation().mainNav</code> with command palette wired to <code>commandGroups</code>. Demo customers/inbox links hidden until a project opts back in.</figcaption>
   </figure>
 
@@ -279,15 +279,15 @@ footer {
   <p class="meta">Resend wrapper with dedupe + dev-gate; <code>analytics</code> schema with <code>log_event</code> SECURITY DEFINER + <code>analytics_reader</code> role; <code>aiModels.ts</code> registry; design-token CSS; <code>app/error.vue</code>; <code>app/pages/help.vue</code>. Migrations <code>003_email_sends.sql</code> + <code>004_analytics.sql</code>.</p>
 
   <figure class="shot">
-    <img src="screenshots/sprint3_error.png" alt="Branded error page" loading="lazy">
+    <img src="screenshots/sprint3_error.webp" alt="Branded error page" loading="lazy">
     <figcaption>Daylight's error chrome — 404/500 with retry + help link + footer. The same template surfaces non-fatal errors raised through <code>createError</code>.</figcaption>
   </figure>
   <figure class="shot">
-    <img src="screenshots/sprint3_help.png" alt="Help page" loading="lazy">
+    <img src="screenshots/sprint3_help.webp" alt="Help page" loading="lazy">
     <figcaption>Categorized FAQ accordions (Getting started, Billing &amp; plans, Data &amp; privacy) + <code>mailto:</code> contact card. Added to <code>auth.global.ts</code>'s public-routes allowlist so logged-out users can reach it.</figcaption>
   </figure>
   <figure class="shot">
-    <img src="screenshots/sprint3_login_tokens.png" alt="Login page with new design tokens" loading="lazy">
+    <img src="screenshots/sprint3_login_tokens.webp" alt="Login page with new design tokens" loading="lazy">
     <figcaption>Login re-rendered with the design-token cascade — slate primary, system fonts, white card on muted bg.</figcaption>
   </figure>
 
@@ -314,15 +314,15 @@ footer {
   <p class="meta">Employees (<code>profiles.is_employee = true</code>) hit <code>/app/admin</code> for KPIs/funnel/feedback/activity, <code>/app/dev-tools</code> for connectivity probes + test-user CRUD + send-test-email. Non-employees get a 404 (not a redirect — internal routes stay invisible).</p>
 
   <figure class="shot">
-    <img src="screenshots/sprint4_admin.png" alt="Admin dashboard chartless KPI/funnel view" loading="lazy">
+    <img src="screenshots/sprint4_admin.webp" alt="Admin dashboard chartless KPI/funnel view" loading="lazy">
     <figcaption>Margin's chartless admin view — KPI cards, hand-rolled funnel (Signed Up → Visited App → Logged Events → Created Content), signups table with engaged/started/bounced status, activity feed, errors, event-type breakdown.</figcaption>
   </figure>
   <figure class="shot">
-    <img src="screenshots/sprint4_devtools.png" alt="Dev tools page" loading="lazy">
+    <img src="screenshots/sprint4_devtools.webp" alt="Dev tools page" loading="lazy">
     <figcaption>Connectivity probes (API/Supabase/localStorage), env/browser inspector, test-user manager (create + magic-link round-trip), send-test-email button. Kernel-WS probe and OG-image preview from Margin were dropped.</figcaption>
   </figure>
   <figure class="shot">
-    <img src="screenshots/sprint4_feedback_form.png" alt="Feedback form" loading="lazy">
+    <img src="screenshots/sprint4_feedback_form.webp" alt="Feedback form" loading="lazy">
     <figcaption>Three-question form, anon + authed, captures <code>page_context</code>. <code>FeedbackForm.vue</code> is mounted wherever a project wants — cosmo doesn't ship a dedicated <code>/feedback</code> page.</figcaption>
   </figure>
 
@@ -349,11 +349,11 @@ footer {
   <p class="meta">Stub-by-default. <code>/app/billing</code> renders cleanly with no Stripe env vars set; real Stripe activates only when <code>STRIPE_SECRET_KEY</code> is set. The <code>stripe</code> SDK is <code>await import()</code>-ed only inside the live branch — it never loads in stub mode.</p>
 
   <figure class="shot">
-    <img src="screenshots/sprint5_billing_free.png" alt="Billing page in stub mode showing Free plan" loading="lazy">
+    <img src="screenshots/sprint5_billing_free.webp" alt="Billing page in stub mode showing Free plan" loading="lazy">
     <figcaption>Free plan card, current usage bar (0/25 items), monthly/yearly toggle, Pro <code>UPricingPlan</code>. Pricing data from <code>app/composables/usePlans.ts</code> mirrors the shape of <code>content/2.pricing.yml</code> so marketing and authed views stay in sync.</figcaption>
   </figure>
   <figure class="shot">
-    <img src="screenshots/sprint5_billing_demo_checkout.png" alt="Billing page with demo-checkout banner" loading="lazy">
+    <img src="screenshots/sprint5_billing_demo_checkout.webp" alt="Billing page with demo-checkout banner" loading="lazy">
     <figcaption>With <code>?demo=checkout</code> query: inline blue "Demo checkout — Stripe is not configured. This is what users see when they hit Upgrade in stub mode. Set STRIPE_SECRET_KEY (and matching webhook + price IDs) in your .env to enable real checkout."</figcaption>
   </figure>
 
@@ -392,7 +392,7 @@ $ curl -X POST -H "Content-Type: application/json" -d '{}' \
   <p class="meta">Mirror <a href="https://github.com/nuxt-ui-templates/chat/tree/main/">nuxt-ui-templates/chat</a>; cross-reference AIR-Bot's <code>MessageContent.vue</code> for the parts renderer. New <code>008_chats.sql</code> drops unused <code>ai_messages</code>/<code>ai_conversations</code>; flatter <code>chats</code> table with <code>messages jsonb</code>. Old <code>app/pages/app/ai.vue</code> becomes a redirect.</p>
 
   <figure class="shot">
-    <img src="screenshots/sprint6_chat_empty.png" alt="Chat empty state with greeting and suggestion grid" loading="lazy">
+    <img src="screenshots/sprint6_chat_empty.webp" alt="Chat empty state with greeting and suggestion grid" loading="lazy">
     <figcaption>Empty state at <code>/app/chat</code>: greeting (time-aware), 6 generic suggestion chips, prompt input wearing <code>[view-transition-name:chat-prompt]</code>. Submit awaits <code>POST /api/chats</code> before <code>navigateTo('/app/chat/&lt;id&gt;')</code> fires; same view-transition is on the <code>[id].vue</code> prompt so the navigate animates smoothly.</figcaption>
   </figure>
 

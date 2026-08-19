@@ -5,6 +5,7 @@
  * filter is a safety net so a misconfigured policy can't surface someone
  * else's row. Sprint 6.
  */
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { serverSupabaseClient } from '#supabase/server'
 import { isDemoMode } from '../../utils/runtimeKeys'
 import { deleteDemoChat, getDemoChat } from '../../utils/demoStore'
@@ -23,11 +24,10 @@ export default defineEventHandler(async (event) => {
     return { ok: true }
   }
 
-  const supabase = await serverSupabaseClient(event)
+  const supabase: SupabaseClient = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('chats')
     .delete()
     .eq('id', id)

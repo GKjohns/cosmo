@@ -2,7 +2,7 @@
 
 **Created:** May 5, 2026
 **Status:** 6 of 6 sprints complete (all sprints ✅)
-**Branch:** `cosmo-uplift` (not merged to main; not pushed)
+**Branch:** `cosmo-uplift` — merged into `main` (the 2026-08 refresh rebuilt on top of it; the admin + dev-tools pages since replaced by `/internal`)
 **Context:** Cosmo is the "batteries-included" Nuxt 4 + Supabase + Inngest starter that every Monument Labs project clones from. It has shipped a lot of demo chrome but the actual batteries — auth, real data, email, billing, analytics, admin — are missing or fake. Daylight, Margin, ARIA, and AIR-Bot have each matured pieces that should now be promoted back into the starter so future projects begin where current projects ended up, not where they started.
 
 ---

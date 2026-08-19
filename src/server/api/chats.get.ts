@@ -7,6 +7,7 @@
  * Owner-only. Uses the request-scoped Supabase client so RLS scopes the
  * result set to the authenticated user.
  */
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { serverSupabaseClient } from '#supabase/server'
 import { isDemoMode } from '../utils/runtimeKeys'
 import { listDemoChats } from '../utils/demoStore'
@@ -23,11 +24,10 @@ export default defineEventHandler(async (event): Promise<ChatListItem[]> => {
     return listDemoChats()
   }
 
-  const supabase = await serverSupabaseClient(event)
+  const supabase: SupabaseClient = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('chats')
     .select('id, title, created_at, updated_at')
     .eq('user_id', userId)

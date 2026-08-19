@@ -6,6 +6,7 @@
  * owner-only (RLS + explicit `user_id` filter), demo-store branch. Sprint 5.
  */
 import { z } from 'zod'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { serverSupabaseClient } from '#supabase/server'
 import { isDemoMode } from '../../../utils/runtimeKeys'
 import { getDemoChat, setDemoChatTitle } from '../../../utils/demoStore'
@@ -30,11 +31,10 @@ export default defineEventHandler(async (event) => {
     return { id, title }
   }
 
-  const supabase = await serverSupabaseClient(event)
+  const supabase: SupabaseClient = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('chats')
     .update({ title, updated_at: new Date().toISOString() })
     .eq('id', id)

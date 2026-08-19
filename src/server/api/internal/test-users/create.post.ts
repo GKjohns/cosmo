@@ -77,8 +77,7 @@ export default defineEventHandler(async (event): Promise<CreateTestUserResponse>
     }
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const magicLink = (linkData as any)?.properties?.action_link as string | undefined
+  const magicLink = linkData?.properties?.action_link
   if (linkError || !magicLink) {
     console.error('[POST /api/internal/test-users/create] Failed to generate magic link', linkError)
     throw createError({ statusCode: 500, statusMessage: 'User created but failed to generate login link' })

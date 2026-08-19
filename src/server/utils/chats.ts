@@ -1,4 +1,5 @@
 import type { UIMessage } from 'ai'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { appendDemoChatMessages, getDemoChat, setDemoChatTitle } from './demoStore'
 
@@ -107,8 +108,13 @@ export function serializeMessages(messages: UIMessage[]): JsonValue[] {
  */
 export interface ChatBackend {
   demo: boolean
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase?: any
+  supabase?: SupabaseClient
+}
+
+/** Live-path client; throws if a caller forgot to attach one outside demo mode. */
+function requireBackendClient(backend: ChatBackend): SupabaseClient {
+  if (!backend.supabase) throw new Error('[chats] ChatBackend.supabase is required outside demo mode')
+  return backend.supabase
 }
 
 const TITLE_INSTRUCTIONS = `You are a title generator for a chat:
@@ -139,7 +145,7 @@ export async function persistChatTitle(backend: ChatBackend, id: string, title: 
     setDemoChatTitle(id, title)
     return
   }
-  const { error } = await backend.supabase.from('chats').update({ title }).eq('id', id)
+  const { error } = await requireBackendClient(backend).from('chats').update({ title }).eq('id', id)
   if (error) console.error(`[chats] Failed to persist title for ${id}`, error)
 }
 
@@ -167,7 +173,8 @@ export async function persistChatMessages(backend: ChatBackend, id: string, resp
     return
   }
 
-  const { data: latest } = await backend.supabase
+  const supabase = requireBackendClient(backend)
+  const { data: latest } = await supabase
     .from('chats')
     .select('id, messages')
     .eq('id', id)
@@ -176,7 +183,7 @@ export async function persistChatMessages(backend: ChatBackend, id: string, resp
 
   const stored = normalizeMessages(latest.messages)
 
-  const { error } = await backend.supabase
+  const { error } = await supabase
     .from('chats')
     .update({
       messages: serializeMessages(mergeMessagesById(stored, responseMessages)),

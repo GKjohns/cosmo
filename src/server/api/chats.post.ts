@@ -13,6 +13,7 @@
  * generates a uuid when `id` is omitted so curl smokes work.
  */
 import type { UIMessage } from 'ai'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { serverSupabaseClient } from '#supabase/server'
 import { createTextMessage, normalizeMessages, serializeMessages } from '../utils/chats'
 import { isDemoMode } from '../utils/runtimeKeys'
@@ -45,11 +46,10 @@ export default defineEventHandler(async (event) => {
     return createDemoChat(chatId, userMessage)
   }
 
-  const supabase = await serverSupabaseClient(event)
+  const supabase: SupabaseClient = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('chats')
     .insert({
       id: chatId,

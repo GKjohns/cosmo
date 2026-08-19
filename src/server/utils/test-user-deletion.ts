@@ -11,13 +11,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  * memberships, ai_conversations, etc.) so this util mostly handles
  * organizations the test user created and any items in those orgs.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function deleteTestUserAndData(serviceClient: SupabaseClient<any, any, any>, testUserId: string): Promise<void> {
+export async function deleteTestUserAndData(serviceClient: SupabaseClient, testUserId: string): Promise<void> {
   // 1. Find organizations created by this user (cosmo's `organizations` has no
   // `created_by` column, so we resolve "owned" orgs as orgs where this user is
   // the only member or the earliest admin).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: userMemberships } = await (serviceClient as any)
+  const { data: userMemberships } = await serviceClient
     .from('memberships')
     .select('organization_id, role')
     .eq('user_id', testUserId)
@@ -30,15 +28,13 @@ export async function deleteTestUserAndData(serviceClient: SupabaseClient<any, a
   // For each admin org, check whether the test user is the *only* member. If
   // so, delete the org (cascades members + items + invitations).
   for (const orgId of adminOrgIds) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count } = await (serviceClient as any)
+    const { count } = await serviceClient
       .from('memberships')
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', orgId)
 
     if ((count ?? 0) <= 1) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (serviceClient as any)
+      const { error } = await serviceClient
         .from('organizations')
         .delete()
         .eq('id', orgId)
@@ -55,8 +51,7 @@ export async function deleteTestUserAndData(serviceClient: SupabaseClient<any, a
   // ON DELETE CASCADE from auth.users → items.created_by anyway. This is a
   // belt-and-suspenders pass for projects that loosen the FK.)
   {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (serviceClient as any)
+    const { error } = await serviceClient
       .from('items')
       .delete()
       .eq('created_by', testUserId)

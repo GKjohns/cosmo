@@ -12,6 +12,7 @@
  * Owner-only; demo-store branch.
  */
 import { z } from 'zod'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { serverSupabaseClient } from '#supabase/server'
 import { normalizeMessages, serializeMessages } from '../../../utils/chats'
 import { isDemoMode } from '../../../utils/runtimeKeys'
@@ -40,12 +41,10 @@ export default defineEventHandler(async (event) => {
     return { success: true }
   }
 
-  const supabase = await serverSupabaseClient(event)
+  const supabase: SupabaseClient = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = supabase as any
-  const { data, error } = await client
+  const { data, error } = await supabase
     .from('chats')
     .select('id, user_id, messages')
     .eq('id', id)
@@ -63,7 +62,7 @@ export default defineEventHandler(async (event) => {
   const index = assertTargetRole(stored, messageId, type)
   const kept = stored.slice(0, type === 'edit' ? index + 1 : index)
 
-  const { error: updateError } = await client
+  const { error: updateError } = await supabase
     .from('chats')
     .update({ messages: serializeMessages(kept), updated_at: new Date().toISOString() })
     .eq('id', id)

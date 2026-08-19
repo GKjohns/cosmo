@@ -49,8 +49,7 @@ export default defineEventHandler(async (event): Promise<{ magicLink: string }> 
     }
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const magicLink = (linkData as any)?.properties?.action_link as string | undefined
+  const magicLink = linkData?.properties?.action_link
   if (linkError || !magicLink) {
     console.error('[POST /api/internal/test-users/[id]/login-link] Failed to generate link', linkError)
     throw createError({ statusCode: 500, statusMessage: 'Failed to generate login link' })

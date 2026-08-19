@@ -1,0 +1,70 @@
+# Sprint 7 bootstrap dry-run — 2026-08-19 (scratch copy, deleted after)
+
+$ rsync -a --exclude={.git,node_modules,.nuxt,.data,.output,.env,.playwright-mcp} ~/Programming/Workspace/cosmo/ $SCRATCH/cosmo-dryrun/
+$ test ! -f $SCRATCH/cosmo-dryrun/src/.env   → no .env copied: OK
+$ cd $SCRATCH/cosmo-dryrun/src && nvm use 22   → Now using node v22.18.0 (npm v10.9.3)
+$ npm ci
+npm warn EBADENGINE   required: { node: '>=22.19' },
+npm warn EBADENGINE   current: { node: 'v22.18.0', npm: '10.9.3' }
+npm warn EBADENGINE   required: { node: '^22.19.0 || ^24.11.0 || >=26.0.0' },
+npm warn EBADENGINE   current: { node: 'v22.18.0', npm: '10.9.3' }
+npm warn EBADENGINE   required: { node: '^22.22.2 || >=24.15.0' },
+npm warn EBADENGINE   current: { node: 'v22.18.0', npm: '10.9.3' }
+npm warn EBADENGINE   required: { node: '^22.19.0 || ^24.11.0 || >=26.0.0' },
+npm warn EBADENGINE   current: { node: 'v22.18.0', npm: '10.9.3' }
+npm warn EBADENGINE   required: { node: '>=22.19.0' },
+npm warn EBADENGINE   current: { node: 'v22.18.0', npm: '10.9.3' }
+added 1612 packages, and audited 1614 packages in 12s
+$ npx nuxt upgrade --dedupe
+added 3 packages, removed 11 packages, changed 11 packages, and audited 1606 packages in 39s
+└  You were already using the latest version of Nuxt (4.5.2)
+$ cp .env.example .env            (empty values → demo mode)
+$ rebrand: app/utils/site.ts → Nebula / https://nebula.example.org; AppLogo.vue; public/robots.txt; package.json name
+$ grep -rn cosmo.example.com . --exclude-dir=node_modules --exclude-dir=.nuxt --exclude-dir=.output   → (no output)
+$ cp ../.cursor/mcp.json.example ../.cursor/mcp.json && cp ../.mcp.json.example ../.mcp.json
+$ npm run dev:nuxt -- --port 3777
+●  Nuxt 4.5.2 (with Nitro 2.13.4, Vite 8.2.1 and Vue 3.5.41)
+  ➜ Local:    http://localhost:3777/
+[nitro] ✔ Nuxt Nitro server built in 1882ms
+DEMO MODE (no Supabase env)
+$ curl each route (status, time):
+/                      200 4.330179s
+/pricing               200 0.181017s
+/blog                  200 0.093761s
+/docs                  307 0.001895s
+/app                   200 1.135367s
+/app/chat              200 0.085493s
+/app/editor            200 0.291419s
+/app/billing           200 0.123354s
+/app/settings          200 0.196293s
+/internal              200 0.073959s
+/internal/dev-tools    200 0.118752s
+/auth/login            302 0.021395s
+/api/health            200 0.002309s
+/sitemap.xml           200 0.007771s
+/robots.txt            200 0.001828s
+   /robots.txt → Sitemap: https://nebula.example.org/sitemap.xml ; /app <title> → 'Nebula · Nebula'
+$ npm run build
+Σ Total size: 45.3 MB (11.2 MB gzip)
+[nitro] ✔ You can preview this build using node .output/server/index.mjs
+real	0m38.488s
+$ npm test
+ Test Files  3 passed (3)
+      Tests  21 passed (21)
+
+# Placeholder-key pass (non-demo bundle): SUPABASE_URL=https://x.supabase.co SUPABASE_KEY=sb_publishable_x SUPABASE_SECRET_KEY=sb_secret_x
+$ npm run dev:nuxt -- --port 3777
+[nitro] ✔ Nuxt Nitro server built in 1574ms
+Supabase: live
+/                          200
+/auth/login                200
+/app                       302
+/internal                  302
+/api/app/profile           401
+/api/chats                 401
+/api/internal/test-users   404
+   ([analytics] log_event failed: fetch failed — expected against the fake host; no hang)
+$ npm run build
+Σ Total size: 45.3 MB (11.2 MB gzip)
+
+# Friction folded back into project_bootstrap.md: nvm 22.18 < 22.19 floor → EBADENGINE warning note; rebrand list += app/layouts/auth.vue (© footer), app/pages/help.vue; content/0.index.yml seo.title is the '/' <title>.

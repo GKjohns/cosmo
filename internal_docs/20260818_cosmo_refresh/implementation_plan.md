@@ -1,7 +1,7 @@
 # Cosmo Refresh — Implementation Plan
 
 **Created:** August 18, 2026
-**Status:** In Progress — executing 2026-08-18 (Kyle: "yes to all, just don't go overboard"; push per sprint; lean path — optional items dropped)
+**Status:** Complete — 7 of 7 sprints landed on `main` 2026-08-18 → 2026-08-19 (Kyle: "yes to all, just don't go overboard"; pushed per sprint; lean path — optional items dropped). Verification: `verification/index.html`.
 **Context:** Cosmo is the starter every new Monument Labs project is rsync'd from, so whatever cosmo ships, every future project inherits. Three research passes on 2026-08-18 (audit of cosmo as it stands, best-practice fold-back from Camera Shy / Daylight / Monument / Personal site, and a diff against the six Nuxt UI templates) found that cosmo (a) does not build — a demo-mode redirect loop OOMs the prerender crawler, and nuxt-og-image 5.x 400s on Nuxt ≥4.5, (b) has drifted from the auth / analytics / SEO / AI-SDK canon that the shipped apps converged on, and (c) is one major AI SDK version and one Nuxt UI minor behind the templates it was built from. Kyle's ask: fold the shipped apps' best practices and the templates' better patterns back into cosmo.
 
 **Goal:** A fresh `rsync` of cosmo, followed by `project_bootstrap.md`, gives a new project a repo that builds green, boots with zero `.env`, and already matches the auth / analytics / SEO / AI-Gateway / repo-shape canon that Camera Shy and Daylight ended up at — so no future project re-learns any of it.
@@ -215,7 +215,7 @@ cosmo/
 
 #### Verification
 - [x] `psql`-free static check: `grep -n "pgrst.db_schemas" db_migrations/0004_analytics.sql` shows `'public, graphql_public, analytics'`; `grep -c "search_path = ''" db_migrations/000{1,2,4}_*.sql` > 0 each; `grep -rn "feedback_received\|fullPath" src/app/composables/useAnalytics.ts src/server` → nothing.
-- [ ] `grep -rn "logEvent(\|logAnalyticsEvent(" src/ | grep -v "EVENTS\|analytics-events"` — every call site passes a registry key (typecheck enforces; this grep is the eyeball).
+- [x] `grep -rn "logEvent(\|logAnalyticsEvent(" src/ | grep -v "EVENTS\|analytics-events"` — every call site passes a registry key (typecheck enforces; this grep is the eyeball).
 - [x] Zero-env dev: navigate `/` → `/pricing` → `/app` → `/app/chat`; server log shows `page_viewed` dev-warn-free no-ops (demo mode) and no 500s; `curl -X POST localhost:3000/api/analytics -H 'content-type: application/json' -d '{"event_type":"page_viewed","payload":{}}'` → `{ "success": true }` and sets a `cosmo_anon` cookie; an unregistered-but-well-formed name (`"nope"`) → 200 + a dev-warn in the server log; a malformed name (`"Not Valid!"`) → 400 (Camera Shy semantics: never reject a real client over a registry miss).
 - [x] `/internal` renders the overview bands empty with the connect note (screenshot `sprint4_internal_overview.webp`); `/internal/reports` renders the empty list (screenshot `sprint4_internal_reports.webp`); throw a test 500 (temporarily add `throw createError({ statusCode: 500 })` to `/api/health`, curl it, then revert) → server log shows the error-capture plugin ran and no-op'd in demo mode.
 - [ ] (skipped — no scratch project, see deviations) Optional if Kyle points a scratch Supabase project at it: apply `0001`–`0010` in order via MCP, `get_advisors` → no ERROR-level findings; `select analytics.internal_overview(7)` returns jsonb; `select * from analytics.real_events limit 1` works.
@@ -271,7 +271,7 @@ cosmo/
 
 ---
 
-### Sprint 7: Docs, CI, canon updates, bootstrap dry-run [Not Started]
+### Sprint 7: Docs, CI, canon updates, bootstrap dry-run [Complete]
 **Goal:** A fresh agent (or Kyle) can clone cosmo, read CLAUDE.md, run the bootstrap doc, and get a green dev server in a new project — and the central convention docs no longer contradict what cosmo ships.
 **Estimated effort:** 3 hours + dry-run
 
@@ -284,13 +284,21 @@ cosmo/
 - 7.6 **Bootstrap dry-run (acceptance test).** `rsync -a --exclude={.git,node_modules,.nuxt,.data,.output} ~/Programming/Workspace/cosmo/ $SCRATCH/cosmo-dryrun/ && cd $SCRATCH/cosmo-dryrun/src` → follow the **updated** `project_bootstrap.md` literally (`test ! -f src/.env` — the rsync line must exclude `.env`, cosmo's real one holds a live gateway key; `nvm use 22`, `npm ci`, no pnpm step, `cp .env.example .env` (empty values → still demo mode), first-pass rebrand of `app/utils/site.ts` + `AppLogo.vue` + `public/robots.txt` Sitemap line, `cp .cursor/mcp.json.example .cursor/mcp.json` and `.mcp.json.example` as reads, STATE.md step) → `npm run dev` green → `grep -rn cosmo.example.com src/` → 0 after rebrand → curl the route list from Sprint 1 → Playwright: `/`, `/app`, `/app/chat`, `/internal` render with the rebranded name (screenshots `sprint7_dryrun_*.webp`) → `npm run build` green → `npm test` green → repeat dev + build once with the Sprint 3 placeholder keys (the non-demo bundle). Any friction becomes a `project_bootstrap.md` edit in the same sprint. Delete the scratch dir after.
 - 7.7 **Phase 5 artifact.** `verification/index.html` with all sprint sections + the dry-run as the end-to-end run-through.
 
+#### Deviations (2026-08-19)
+- **Stall/resume:** the Sprint 1–6 executor applied 7.5 (canon docs + `build-from-spec` / `brand-assets` skills, `_template/STATE.md`) and then stalled; a second executor verified every canon file against `canon_updates.md` (all applied, nothing half-done) and finished 7.1–7.4, 7.6, 7.7.
+- 7.1/7.2/7.3 as specced; `internal_docs/ai_gateway_usage.md` 125 lines, CLAUDE.md 173, README 113. The 20260505 folder's 22 PNGs (17 referenced + 5 under `screenshots/live/`) → WebP (1.3 MB → 0.4 MB). One line in the docs-template demo content (`src/content/1.docs/1.getting-started/3.usage.md`) dropped its `nuxt-og-image` mention; the `pnpm` tabs in `2.code-blocks.md` are Nuxt UI's package-manager demo and stay.
+- Zero-disable check: the 16 remaining `eslint-disable … no-explicit-any` lines cleared by typing clients as the un-parameterised `SupabaseClient` (house pattern; `supabase.types: false`). One semantic no-op in `chats/[id].post.ts` (`!backend.demo && userId` → `backend.supabase && userId`) so `requireActiveOrg` typechecks.
+- 7.4: `_template/STATE.md` already existed (created by the first executor); `cosmo/STATE.md` written. `renovate.json` pnpm line dropped; CI confirmed tracked (lint → typecheck → test).
+- 7.6 dry-run: node 22.18 on this machine → `npm ci` prints EBADENGINE (floor 22.19) but installs; `npx nuxt upgrade --dedupe` reported already-latest (4.5.2). Everything else green first try (dev zero-env, 15 routes, build 38 s, 21 tests, placeholder-key dev + build). Friction folded into `project_bootstrap.md`: EBADENGINE note, `app/layouts/auth.vue` + `app/pages/help.vue` on the rebrand list, `content/0.index.yml` `seo.title` is the `/` title. Scratch dir deleted; dry-run shots `sprint7_dryrun_{home,app,chat,internal}.webp`.
+- No scratch Supabase project was ever created (see Sprint 4), so nothing to pause.
+
 #### Verification
-- [ ] Repo grep: `grep -rn "pnpm\|001-007\|SUPABASE_SERVICE_ROLE_KEY\|OPENAI_API_KEY\|@ai-sdk/openai\|nuxt-og-image\|supabase/migrations\|OpenAI SDK for worker\|no per-project mirrors\|openai_usage\|/app/admin\|/app/dev-tools\|cosmo.example.com" CLAUDE.md README.md internal_docs/README.md internal_docs/ai_gateway_usage.md src/ db_migrations/` → only the legacy-name fallback in `runtimeKeys.ts` / the boot banner and `SITE.url` in `site.ts` (historical plan folders excluded).
-- [ ] Canon grep: `grep -n "pnpm-lock\|literal\|SUPABASE_ANON_KEY\|new Chat(\|OpenAI SDK for worker\|toUIMessageStreamResponse\|csrf" ~/claude-ops/conventions/*.md ~/.claude/CLAUDE.md ~/.claude/skills/build-from-spec/SKILL.md` → only lines that explicitly say "deprecated"/"legacy".
-- [ ] `git ls-files .github/workflows/ci.yml` shows it tracked; `grep -c pnpm .github/workflows/ci.yml renovate.json` → 0.
-- [ ] Dry-run: dev green, build green, test green, screenshots captured; `project_bootstrap.md` reflects any friction found.
-- [ ] `verification/index.html` opens locally with every referenced `.webp` present; no `.png` under `verification/`.
-- [ ] Final: `cd src && npm run lint && npm run typecheck && npm test && npm run build` all green from a clean `npm ci`; `git status` clean; nothing pushed.
+- [x] Repo grep: `grep -rn "pnpm\|001-007\|SUPABASE_SERVICE_ROLE_KEY\|OPENAI_API_KEY\|@ai-sdk/openai\|nuxt-og-image\|supabase/migrations\|OpenAI SDK for worker\|no per-project mirrors\|openai_usage\|/app/admin\|/app/dev-tools\|cosmo.example.com" CLAUDE.md README.md internal_docs/README.md internal_docs/ai_gateway_usage.md src/ db_migrations/` → only the legacy-name fallback in `runtimeKeys.ts` / the boot banner and `SITE.url` in `site.ts` (historical plan folders excluded).
+- [x] Canon grep: `grep -n "pnpm-lock\|literal\|SUPABASE_ANON_KEY\|new Chat(\|OpenAI SDK for worker\|toUIMessageStreamResponse\|csrf" ~/claude-ops/conventions/*.md ~/.claude/CLAUDE.md ~/.claude/skills/build-from-spec/SKILL.md` → only lines that explicitly say "deprecated"/"legacy".
+- [x] `git ls-files .github/workflows/ci.yml` shows it tracked; `grep -c pnpm .github/workflows/ci.yml renovate.json` → 0.
+- [x] Dry-run: dev green, build green, test green, screenshots captured; `project_bootstrap.md` reflects any friction found.
+- [x] `verification/index.html` opens locally with every referenced `.webp` present; no `.png` under `verification/`.
+- [x] Final: `cd src && npm run lint && npm run typecheck && npm test && npm run build` all green from a clean `npm ci`; `git status` clean; pushed to `origin/main` (Kyle approved push-per-sprint).
 
 ---
 

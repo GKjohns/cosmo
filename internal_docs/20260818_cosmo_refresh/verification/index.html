@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cosmo Refresh — Verification</title>
+<style>
+:root { --bg:#fafafa; --ink:#0f172a; --muted:#64748b; --rule:#e2e8f0; --card:#fff; --tint:#f1f5f9; --good:#16a34a; --bad:#dc2626; }
+* { box-sizing:border-box; }
+html,body { margin:0; padding:0; background:var(--bg); color:var(--ink); font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+.wrap { max-width:980px; margin:0 auto; padding:56px 32px 96px; }
+h1 { font-size:32px; margin:0 0 8px; letter-spacing:-0.02em; }
+h2 { font-size:22px; margin:48px 0 8px; padding-top:24px; border-top:1px solid var(--rule); letter-spacing:-0.01em; }
+h3 { font-size:16px; margin:24px 0 8px; }
+.lede { color:var(--muted); margin:0 0 24px; font-size:16px; }
+.meta { color:var(--muted); font-size:13px; margin:0 0 32px; }
+.meta code { background:var(--tint); padding:1px 5px; border-radius:4px; }
+code { font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; }
+pre { background:var(--tint); border:1px solid var(--rule); border-radius:8px; padding:14px 16px; overflow-x:auto; font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; margin:12px 0 20px; }
+table { border-collapse:collapse; width:100%; margin:12px 0 20px; font-size:14px; }
+th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--rule); vertical-align:top; }
+th { color:var(--muted); font-weight:600; font-size:13px; }
+.good { color:var(--good); font-weight:600; }
+.bad { color:var(--bad); font-weight:600; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; margin:12px 0 8px; }
+figure { margin:0; background:var(--card); border:1px solid var(--rule); border-radius:10px; overflow:hidden; }
+figure img { display:block; width:100%; height:auto; max-width:100%; }
+figcaption { padding:10px 12px; font-size:13px; color:var(--muted); border-top:1px solid var(--rule); }
+figcaption b { color:var(--ink); font-weight:600; }
+ul { margin:8px 0 16px; padding-left:22px; }
+li { margin:3px 0; }
+.pill { display:inline-block; font-size:12px; padding:1px 8px; border-radius:999px; background:#dcfce7; color:#166534; font-weight:600; margin-left:6px; vertical-align:middle; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Cosmo Refresh — Verification</h1>
+<p class="lede">Plan: <code>internal_docs/20260818_cosmo_refresh/implementation_plan.md</code>. Seven sprints, 2026-08-18 → 2026-08-19, all on <code>main</code>. Every screenshot below was taken against <code>npm run dev</code> in demo mode (zero <code>.env</code>) unless the caption says otherwise.</p>
+<p class="meta">Commits: Sprint 1 <code>cb73b66</code> + <code>c899456</code> · Sprint 2 <code>88e477f</code> · Sprint 3 <code>14a34f0</code> · Sprint 4 <code>ef20aa9</code> · Sprint 5 <code>50285d9</code> · Sprint 6 <code>4996ddd</code> · Sprint 7 — see <code>git log</code>. Cosmo is not deployed; there is no live environment to check.</p>
+
+<h2>Build health — before → after</h2>
+<table>
+<tr><th>Check (from <code>src/</code>, clean <code>npm ci</code>)</th><th>Before (2026-08-18 baseline, repo root)</th><th>After (2026-08-19, Sprint 7 final)</th></tr>
+<tr><td><code>npm run typecheck</code></td><td class="bad">9 errors</td><td class="good">0 errors</td></tr>
+<tr><td><code>npm run lint</code></td><td class="bad">262 errors / 257 warnings</td><td class="good">0 / 0 — and 0 <code>eslint-disable</code> lines in <code>src/</code></td></tr>
+<tr><td><code>npm run build</code></td><td class="bad">OOM (prerender crawler redirect loop) — never finished</td><td class="good">green, ~38 s, Σ 45.3 MB (11.2 MB gzip)</td></tr>
+<tr><td><code>npm test</code></td><td>—(no harness)</td><td class="good">3 files / 21 tests pass, no env</td></tr>
+<tr><td>Zero-env <code>npm run dev</code></td><td>boots, but <code>/app/admin</code> + <code>/app/dev-tools</code> redirect-loop and the chat/editor fetches 404</td><td class="good">boots <code>DEMO MODE</code>; <code>/ /app /app/chat /app/editor /app/billing /app/settings /internal /internal/dev-tools</code> all 200</td></tr>
+<tr><td>CI</td><td><code>.github/workflows/ci.yml</code> gitignored, pnpm-shaped</td><td class="good">tracked; npm; lint → typecheck → test from <code>src/</code>, advisory, no env</td></tr>
+</table>
+<pre># baseline typecheck (scratchpad/cosmo_baseline_typecheck.log)
+app/components/editor/CollaborationUsers.vue(2,40): error TS2307: Cannot find module '~/composables/useEditorCollaboration'
+app/components/editor/ImageUploadNode.vue(15,16): error TS2304: Cannot find name 'useUpload'.
+app/components/home/HomeSales.vue(26,22): error TS2304: Cannot find name 'randomInt'.
+… (9 errors)   ERROR  Process exited with non-zero status (2)
+
+# baseline build (scratchpad/cosmo_baseline_build.log) — tail
+FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
+
+# Sprint 7 final (scratchpad/final_checks.log)
+== lint       → exit 0
+== typecheck  → exit 0
+== test       → Test Files 3 passed (3) · Tests 21 passed (21)
+== build      → exit 0 · Σ Total size: 45.3 MB (11.2 MB gzip)</pre>
+
+<h2>Sprint 1 — Repo shape + green build <span class="pill">Complete</span></h2>
+<p>App moved to <code>src/</code>, migrations to <code>db_migrations/0001–0008</code>, <code>.gitignore</code> + CI rewritten, the demo-mode redirect loop and the prerender/og-image build failures removed, dead scaffolds pruned, <code>engines.node >=22.19</code>. Typecheck 9 → 0, lint 262/257 → 0/0, build OOM → green.</p>
+<div class="grid">
+<figure><img src="screenshots/sprint1_app_home.webp" alt="Demo-mode /app dashboard"><figcaption><b>/app in demo mode after the move to src/</b> — the dashboard home renders with fixture stats and no 404 fetches; the "+" menu points at /app/chat and /app/editor instead of deleted pages.</figcaption></figure>
+</div>
+
+<h2>Sprint 2 — Dependency refresh + AI SDK v7 <span class="pill">Complete</span></h2>
+<p><code>@nuxt/ui</code> 4.10, <code>@nuxt/content</code> 3.15 (native sqlite), <code>ai@7</code> / <code>@ai-sdk/vue@4</code>, gateway-only (no <code>openai</code>, no <code>@ai-sdk/openai</code>), Comark for assistant markdown, editor parity with the template. <code>@nuxt/icon</code> pinned to 2.3.1 (2.4.x breaks SSR icons under nitro 2.13).</p>
+<div class="grid">
+<figure><img src="screenshots/sprint2_chat_comark.webp" alt="Chat reply rendered through Comark"><figcaption><b>Chat reply streams through Comark</b> — markdown + shiki code block rendered from an ai@7 UI-message stream via <code>useChat()</code>; title generated before the stream and shown in the sidebar.</figcaption></figure>
+<figure><img src="screenshots/sprint2_editor.webp" alt="Editor page"><figcaption><b>/app/editor on TipTap 3.29 + Nuxt UI 4.10</b> — slash commands, drag handle, and inline AI completion toolbar all mount after the bump (no lost components under <code>componentDetection</code>).</figcaption></figure>
+</div>
+
+<h2>Sprint 3 — Auth canon, env rename, SEO/head, brand assets <span class="pill">Complete</span></h2>
+<p>Camera Shy's seven auth files copied verbatim (demo early return is the only delta), env renamed to <code>SUPABASE_URL / SUPABASE_KEY / SUPABASE_SECRET_KEY</code> with a boot banner that warns on legacy names, <code>/app/admin</code> + <code>/app/dev-tools</code> → <code>/internal/**</code> (404-never-403), <code>SITE</code> in <code>app/utils/site.ts</code> drives head / JSON-LD / sitemap / OG, static brand-asset set regenerated.</p>
+<div class="grid">
+<figure><img src="screenshots/sprint3_marketing_home.webp" alt="Marketing home with new header"><figcaption><b>Marketing home with the template header</b> — canonical, og:image (absolute URL) and JSON-LD @graph present in the SSR head; nav from <code>useNavigation.ts</code>.</figcaption></figure>
+<figure><img src="screenshots/sprint3_auth_layout.webp" alt="Split auth layout"><figcaption><b>/auth/login under placeholder Supabase keys</b> — the real split-screen form renders (no demo redirect), Login/Sign up toggle present; proves the <code>public.demoMode=false</code> code path.</figcaption></figure>
+<figure><img src="screenshots/sprint3_confirm_error.webp" alt="Auth confirm error state"><figcaption><b>/auth/confirm visited bare</b> — shows the "incomplete link" error, not a spinner or a hang.</figcaption></figure>
+<figure><img src="screenshots/sprint3_docs_mobile_nav.webp" alt="Docs mobile nav"><figcaption><b>Docs at mobile width</b> — the template's slideover nav replaces the old broken mobile menu.</figcaption></figure>
+</div>
+
+<h2>Sprint 4 — Analytics, error capture, /internal overview + reports <span class="pill">Complete</span></h2>
+<p><code>0004_analytics.sql</code> rewritten from Camera Shy (anon/visit stitching, service-role-only <code>log_event</code>, <code>real_events</code>, <code>internal_overview()</code>), new <code>0009_app_errors</code> / <code>0010_internal_reports</code>, typed <code>EVENTS</code> registry + <code>page_viewed</code> middleware, 5xx fingerprinting, <code>/internal</code> overview and <code>/internal/reports</code>. SQL is static-checked only — no scratch Supabase project (MCP quoted $10/mo, no Docker).</p>
+<div class="grid">
+<figure><img src="screenshots/sprint4_internal_overview.webp" alt="/internal overview"><figcaption><b>/internal overview in demo mode</b> — tiles, funnel, recent activity and errors band render from the canned <code>internal_overview</code> shape; employee gate passes the fixture user.</figcaption></figure>
+<figure><img src="screenshots/sprint4_internal_reports.webp" alt="/internal/reports"><figcaption><b>/internal/reports list</b> — reports are rows in <code>analytics.internal_reports</code>, rendered with the hand-drawn SVG chart block; empty-state copy when none exist.</figcaption></figure>
+</div>
+
+<h2>Sprint 5 — Chat parity with the Nuxt UI chat template <span class="pill">Complete</span></h2>
+<p>Date-grouped sidebar with rename/delete, ⌘O / ⌘K shortcuts, per-message copy/regenerate, user-message edit (merge-by-id persistence). Votes, visibility, uploads and model picker deferred.</p>
+<div class="grid">
+<figure><img src="screenshots/sprint5_sidebar_groups.webp" alt="Grouped chat sidebar"><figcaption><b>Sidebar grouped by date</b> — Today / Yesterday / older buckets, SSR'd on first paint (<code>useFetch</code> no longer <code>server:false</code>).</figcaption></figure>
+<figure><img src="screenshots/sprint5_rename_modal.webp" alt="Rename chat modal"><figcaption><b>Rename modal</b> — PATCH <code>/api/chats/:id/title</code>; the sidebar label updates in place.</figcaption></figure>
+<figure><img src="screenshots/sprint5_message_actions.webp" alt="Message actions"><figcaption><b>Per-message actions</b> — copy on every message, regenerate on the last assistant turn, edit on user turns (re-sends with the same message id).</figcaption></figure>
+</div>
+
+<h2>Sprint 6 — Billing hardening, Inngest conventions, vitest harness <span class="pill">Complete</span></h2>
+<p>Idempotent Stripe webhook (<code>0011_processed_stripe_events</code>, preview-safe), <code>generate-digest</code> reworked to Daylight's Inngest conventions (+ the inngest v4 <code>isDev</code> fix so the local CLI serves without a signing key), vitest harness with 21 seed tests, CI gains <code>npm test</code>.</p>
+<div class="grid">
+<figure><img src="screenshots/sprint6_devtools_inngest.webp" alt="Dev tools Inngest panel"><figcaption><b>/internal/dev-tools Inngest panel</b> — "Run digest now" fires the event through the local CLI; demo mode no-ops the Supabase write.</figcaption></figure>
+<figure><img src="screenshots/sprint6_inngest_runs.webp" alt="Inngest dev UI runs"><figcaption><b>Inngest dev UI (localhost:8288)</b> — <code>generate-digest</code> run completes; the auto-generated failure companion shows as a second function row.</figcaption></figure>
+</div>
+<pre>$ npm test        (samples/sprint6_vitest.txt)
+ ✓ server/__tests__/utils/billing.test.ts            (4)
+ ✓ app/navigation.routes.test.ts                      (11)
+ ✓ server/__tests__/api/stripe-webhook.test.ts         (6)
+ Test Files  3 passed (3)   Tests  21 passed (21)</pre>
+
+<h2>Sprint 7 — Docs, CI, canon updates, bootstrap dry-run <span class="pill">Complete</span></h2>
+<p>Root <code>CLAUDE.md</code> + <code>README.md</code> rewritten on Camera Shy's skeleton; <code>internal_docs/README.md</code> + <code>ai_gateway_usage.md</code> added, <code>openai_usage.md</code> removed; 20260505 verification PNGs → WebP; <code>renovate.json</code> pnpm line dropped; the 16 remaining <code>eslint-disable</code> lines cleared; canon docs updated per <code>canon_updates.md</code> (<code>project_bootstrap</code>, <code>ai_sdk_usage</code>, <code>nuxt_ui_chat</code>, <code>supabase_auth</code>, conventions <code>README</code>, <code>~/.claude/CLAUDE.md</code>, <code>build-from-spec</code> + <code>brand-assets</code> skills); <code>~/claude-ops/monument/projects/{_template,cosmo}/STATE.md</code> created.</p>
+
+<h3>End-to-end: bootstrap dry-run (acceptance test)</h3>
+<p>A scratch clone was made with the <em>updated</em> <code>project_bootstrap.md</code> followed literally — rsync (no <code>.env</code> copied), <code>nvm use 22</code>, <code>npm ci</code>, <code>npx nuxt upgrade --dedupe</code>, <code>cp .env.example .env</code>, first-pass rebrand to "Nebula", MCP config copies — then dev / curl / Playwright / build / test, and a second dev + build with placeholder Supabase keys (the non-demo bundle). The scratch copy was deleted afterwards. Full excerpt: <code>samples/sprint7_dryrun.txt</code>.</p>
+<div class="grid">
+<figure><img src="screenshots/sprint7_dryrun_home.webp" alt="Dry-run clone marketing home"><figcaption><b>Dry-run clone: /</b> — boots from a fresh rsync with an all-empty <code>.env</code>; the hero still carries the AEGIS demo content (scaffolding by design — <code>content/0.index.yml</code> is on the rebrand list).</figcaption></figure>
+<figure><img src="screenshots/sprint7_dryrun_app.webp" alt="Dry-run clone /app"><figcaption><b>Dry-run clone: /app</b> — <code>&lt;title&gt;</code> reads "Nebula · Nebula" and the wordmark says Nebula: the <code>site.ts</code> + <code>AppLogo.vue</code> rebrand propagates to head and chrome.</figcaption></figure>
+<figure><img src="screenshots/sprint7_dryrun_chat.webp" alt="Dry-run clone /app/chat"><figcaption><b>Dry-run clone: /app/chat</b> — empty state + grouped sidebar render with zero env; no gateway key so replies are the canned "add AI_GATEWAY_API_KEY" message.</figcaption></figure>
+<figure><img src="screenshots/sprint7_dryrun_internal.webp" alt="Dry-run clone /internal"><figcaption><b>Dry-run clone: /internal</b> — "Overview · Nebula"; the employee gate passes the demo fixture, overview tiles render from canned data.</figcaption></figure>
+</div>
+<pre>$ rsync -a --exclude={.git,node_modules,.nuxt,.data,.output,.env,.playwright-mcp} ~/Programming/Workspace/cosmo/ $SCRATCH/cosmo-dryrun/
+$ test ! -f $SCRATCH/cosmo-dryrun/src/.env          → OK (no .env copied)
+$ nvm use 22 && npm ci                               → node v22.18.0; added 1612 packages in 12s (EBADENGINE warning only: floor is 22.19)
+$ npx nuxt upgrade --dedupe                          → already on latest Nuxt (4.5.2)
+$ cp .env.example .env && (rebrand site.ts / AppLogo.vue / robots.txt / package.json)
+$ grep -rn cosmo.example.com . --exclude-dir=…       → (none)
+$ npm run dev:nuxt                                   → DEMO MODE (no Supabase env)
+  / 200 · /pricing 200 · /blog 200 · /app 200 · /app/chat 200 · /app/editor 200 · /app/billing 200
+  /app/settings 200 · /internal 200 · /internal/dev-tools 200 · /auth/login 302 · /api/health 200 · /sitemap.xml 200
+$ npm run build                                      → Σ 45.3 MB (11.2 MB gzip), 38 s
+$ npm test                                           → 3 files / 21 tests passed
+# placeholder keys (SUPABASE_URL=https://x.supabase.co SUPABASE_KEY=sb_publishable_x SUPABASE_SECRET_KEY=sb_secret_x)
+$ npm run dev:nuxt                                   → Supabase: live
+  / 200 · /auth/login 200 · /app 302 · /internal 302 · /api/app/profile 401 · /api/chats 401 · /api/internal/test-users 404
+$ npm run build                                      → Σ 45.3 MB (11.2 MB gzip)</pre>
+<p>Friction folded back into <code>project_bootstrap.md</code>: a note that <code>nvm use 22</code> below 22.19 prints an EBADENGINE warning (install still succeeds — <code>nvm install 22</code> clears it); <code>app/layouts/auth.vue</code> (© footer) and <code>app/pages/help.vue</code> added to the rebrand list; <code>content/0.index.yml</code>'s <code>seo.title</code> called out as the <code>/</code> <code>&lt;title&gt;</code>.</p>
+
+<h3>Sprint 7 checklist</h3>
+<ul>
+<li>Repo grep for stale terms (pnpm, 001-007, old env names, <code>@ai-sdk/openai</code>, nuxt-og-image, supabase/migrations, /app/admin, cosmo.example.com …) over CLAUDE.md / README.md / internal_docs / src / db_migrations → only the legacy-name fallback + banner (<code>runtimeKeys.ts</code>, <code>boot-banner.ts</code>, <code>nuxt.config.ts</code>), <code>SITE.url</code> / robots.txt, the two "legacy names still warn" doc lines, and the Nuxt UI docs-template demo content (<code>src/content/1.docs/**</code> package-manager tabs).</li>
+<li>Canon grep (<code>pnpm-lock | literal | SUPABASE_ANON_KEY | new Chat( | OpenAI SDK for worker | toUIMessageStreamResponse | csrf</code>) over <code>~/claude-ops/conventions/*.md</code>, <code>~/.claude/CLAUDE.md</code>, <code>build-from-spec/SKILL.md</code> → only "legacy / deprecated / rename" statements (and <code>supabase_auth.md</code>'s "matched literally" about the redirect allowlist).</li>
+<li><code>git ls-files .github/workflows/ci.yml</code> → tracked; <code>grep -c pnpm</code> ci.yml / renovate.json → 0 / 0.</li>
+<li>Every <code>.webp</code> referenced here exists; no <code>.png</code> under <code>verification/</code>.</li>
+<li>Final from clean <code>npm ci</code>: lint 0/0 · typecheck 0 · test 21/21 · build green.</li>
+</ul>
+
+</div>
+</body>
+</html>
