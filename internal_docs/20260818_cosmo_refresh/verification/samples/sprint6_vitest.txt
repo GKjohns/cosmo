@@ -1,0 +1,34 @@
+
+> test
+> vitest run --reporter=verbose
+
+
+ RUN  v3.2.7 /Users/kylejohnson/Programming/Workspace/cosmo/src
+
+ ✓ server/__tests__/utils/billing.test.ts > isStripeConfigured > is false when STRIPE_SECRET_KEY is unset 1ms
+ ✓ server/__tests__/utils/billing.test.ts > isStripeConfigured > is false when STRIPE_SECRET_KEY is the empty string 0ms
+ ✓ server/__tests__/utils/billing.test.ts > isStripeConfigured > is true when STRIPE_SECRET_KEY holds a value 0ms
+ ✓ server/__tests__/utils/billing.test.ts > stub redirect URLs > point back at the billing page with a demo flag 0ms
+ ✓ app/navigation.routes.test.ts > useNavigation routes > found routes to check 0ms
+ ✓ app/navigation.routes.test.ts > useNavigation routes > route /app/chat has a backing page file 0ms
+ ✓ app/navigation.routes.test.ts > useNavigation routes > route /app has a backing page file 0ms
+ ✓ app/navigation.routes.test.ts > useNavigation routes > route /app/editor has a backing page file 0ms
+ ✓ app/navigation.routes.test.ts > useNavigation routes > route /app/billing has a backing page file 0ms
+ ✓ app/navigation.routes.test.ts > useNavigation routes > route /app/settings has a backing page file 0ms
+ ✓ app/navigation.routes.test.ts > useNavigation routes > route /internal has a backing page file 0ms
+ ✓ app/navigation.routes.test.ts > useNavigation routes > route /internal/reports has a backing page file 0ms
+ ✓ app/navigation.routes.test.ts > useNavigation routes > route /internal/dev-tools has a backing page file 0ms
+ ✓ app/navigation.routes.test.ts > useNavigation routes > route /app/settings/members has a backing page file 0ms
+ ✓ app/navigation.routes.test.ts > useNavigation routes > the resolver rejects a route with no page (sanity check) 0ms
+ ✓ server/__tests__/api/stripe-webhook.test.ts > POST /api/stripe/webhook > rejects a bad signature with 400 and touches nothing 2ms
+ ✓ server/__tests__/api/stripe-webhook.test.ts > POST /api/stripe/webhook > rejects a missing body / signature with 400 1ms
+ ✓ server/__tests__/api/stripe-webhook.test.ts > POST /api/stripe/webhook > logs the event id first, processes it, and short-circuits on duplicate delivery 3ms
+ ✓ server/__tests__/api/stripe-webhook.test.ts > POST /api/stripe/webhook > processes anyway when the idempotency table is missing (42P01) 1ms
+ ✓ server/__tests__/api/stripe-webhook.test.ts > POST /api/stripe/webhook > acknowledges and ignores test-mode events in production 1ms
+ ✓ server/__tests__/api/stripe-webhook.test.ts > POST /api/stripe/webhook > still processes test-mode events outside production (dev / preview) 0ms
+
+ Test Files  3 passed (3)
+      Tests  21 passed (21)
+   Start at  00:38:45
+   Duration  224ms (transform 81ms, setup 0ms, collect 95ms, tests 12ms, environment 0ms, prepare 143ms)
+

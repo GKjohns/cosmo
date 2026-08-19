@@ -7,6 +7,11 @@
  *
  * Live mode: opens a Stripe Checkout session attached to `metadata.organization_id`,
  * reusing an existing customer if `subscriptions.stripe_customer_id` is set.
+ *
+ * Price selection is server-authoritative: the client sends NO body — the
+ * price comes from `STRIPE_PRICE_ID` (runtime config). A clone that adds
+ * monthly/annual tiers should accept a `mode` / `interval` token and map it
+ * to a price id here, never accept a price id from the browser.
  */
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -69,6 +74,13 @@ export default defineEventHandler(async (event) => {
     if (authUser?.email) sessionParams.customer_email = authUser.email
   }
 
-  const session = await stripe.checkout.sessions.create(sessionParams)
+  // Idempotency key (Daylight shape): a double-click or a retried request
+  // inside the same hour replays the SAME Checkout session instead of
+  // minting a second one. Keyed by price so a plan change mid-hour still gets
+  // its own session.
+  const hourBucket = new Date().toISOString().slice(0, 13)
+  const idempotencyKey = `sub_${userId}_${priceId}_${hourBucket}`
+
+  const session = await stripe.checkout.sessions.create(sessionParams, { idempotencyKey })
   return { url: session.url }
 })

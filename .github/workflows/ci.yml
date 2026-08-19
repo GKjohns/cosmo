@@ -1,4 +1,4 @@
-# CI: lint + typecheck (+ tests from Sprint 6) on every PR and push to main.
+# CI: lint + typecheck + tests on every PR and push to main.
 #
 # Notes:
 # - The app lives in src/ (no root package.json), hence the working-directory
@@ -46,3 +46,6 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Test
+        run: npm test

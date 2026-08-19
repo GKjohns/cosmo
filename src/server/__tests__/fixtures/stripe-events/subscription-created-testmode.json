@@ -1,0 +1,30 @@
+{
+  "id": "evt_test_sub_created_testmode_001",
+  "type": "customer.subscription.created",
+  "livemode": false,
+  "data": {
+    "object": {
+      "id": "sub_test_002",
+      "object": "subscription",
+      "customer": "cus_test_002",
+      "status": "active",
+      "cancel_at_period_end": false,
+      "current_period_start": 1700000000,
+      "current_period_end": 1702592000,
+      "metadata": {
+        "organization_id": "org-1"
+      },
+      "items": {
+        "data": [
+          {
+            "id": "si_test_002",
+            "price": {
+              "id": "price_pro_monthly_test",
+              "unit_amount": 1900
+            }
+          }
+        ]
+      }
+    }
+  }
+}

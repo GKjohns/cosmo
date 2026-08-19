@@ -8,8 +8,7 @@ Cosmo's set is a **first-apply template**: nothing here has been applied to a
 long-lived project, so the files were rewritten in place during the 2026-08
 refresh (`0004` most of all). Once a clone applies them, that clone's copies
 become forward-only — schema changes go in a **new** numbered file; never edit
-an applied one. **Next number is `0012`** (`0011_processed_stripe_events` is
-reserved for the Stripe idempotency table).
+an applied one. **Next number is `0012`.**
 
 Every migration is written to be idempotent (`if not exists`, `on conflict do
 nothing`, `drop policy if exists` before `create policy`), so re-running one is
@@ -20,7 +19,7 @@ a no-op.
 1. Read the header of each file. `0004` has a real pre-flight (read the current
    `pgrst.db_schemas` for `authenticator` and **append** `analytics`, never
    overwrite). Fill in the `APPLIED TO:` line as you go.
-2. `apply_migration` them in order, `0001` → `0010`.
+2. `apply_migration` them in order, `0001` → `0011`.
 3. After **each** one, run `get_advisors` (security + performance) and fix
    anything at ERROR level before moving on.
 4. When the set is applied, `generate_typescript_types` →
@@ -43,6 +42,7 @@ a no-op.
 | `0008_chats.sql` | `chats` with `messages jsonb UIMessage[]` |
 | `0009_app_errors.sql` | fingerprinted 5xx capture (`record_app_error`) |
 | `0010_internal_reports.sql` | `analytics.internal_reports` for `/report` and `/internal/reports` |
+| `0011_processed_stripe_events.sql` | Stripe webhook idempotency log (insert-first, service-role only) |
 
 ## Conventions
 

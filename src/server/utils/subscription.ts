@@ -51,7 +51,8 @@ interface SubscriptionRow {
  * override). Otherwise returns 'free'.
  *
  * Live mode: looks up the user's primary org subscription. Returns 'pro' for
- * active / trialing / within-grace past_due states, 'free' otherwise.
+ * active / trialing (while `current_period_end` is in the future) /
+ * within-grace past_due states, 'free' otherwise.
  */
 export async function getUserTier(
   supabase: SupabaseClient,
@@ -96,8 +97,16 @@ export async function getUserTier(
       const subs = Array.isArray(row.subscriptions) ? row.subscriptions : row.subscriptions ? [row.subscriptions] : []
       for (const sub of subs) {
         if (!sub) continue
-        if (sub.status === 'active' || sub.status === 'trialing') {
+        if (sub.status === 'active') {
           return 'pro'
+        }
+        // `trialing` only counts while the trial period is still running.
+        // Daylight incident: a dead reverse-trial row whose webhook flip never
+        // landed kept reading as paid because status alone was trusted.
+        if (sub.status === 'trialing') {
+          if (!sub.current_period_end) return 'pro'
+          if (Date.now() < new Date(sub.current_period_end).getTime()) return 'pro'
+          continue
         }
         if (sub.status === 'past_due' && sub.current_period_end) {
           const periodEnd = new Date(sub.current_period_end).getTime()

@@ -5,6 +5,7 @@
  *   - drops the kernel WebSocket probe (Margin-specific)
  *   - drops the OG image preview modal (Margin-specific brand chrome)
  *   - adds a "Send test email" probe wired to /api/internal/test-email
+ *   - adds a "Send digest event" probe wired to /api/internal/inngest/send-digest
  *   - test-user table reads `item_count` from cosmo's items table
  */
 import type { TabsItem, TableColumn, TableRow } from '@nuxt/ui'
@@ -32,6 +33,7 @@ const tabItems: TabsItem[] = [
   { label: 'Environment', icon: 'i-lucide-server', value: 'environment', slot: 'environment' },
   { label: 'Browser', icon: 'i-lucide-monitor', value: 'browser', slot: 'browser' },
   { label: 'Email', icon: 'i-lucide-mail', value: 'email', slot: 'email' },
+  { label: 'Inngest', icon: 'i-lucide-workflow', value: 'inngest', slot: 'inngest' },
   { label: 'Test Users', icon: 'i-lucide-user-plus', value: 'test-users', slot: 'test-users' }
 ]
 
@@ -168,6 +170,34 @@ function emailLabel(status: string): string {
     case 'skipped_missing_config': return 'Skipped (no config)'
     case 'failed': return 'Failed'
     default: return status
+  }
+}
+
+// === Inngest send ===
+type SendDigestResult = { sent: boolean, ids?: string[], error?: string }
+const digestStatus = ref<CheckStatus>('idle')
+const digestResult = ref<SendDigestResult | null>(null)
+
+async function sendDigestEvent() {
+  digestStatus.value = 'checking'
+  digestResult.value = null
+  try {
+    const result = await $fetch<SendDigestResult>('/api/internal/inngest/send-digest', { method: 'POST' })
+    digestResult.value = result
+    digestStatus.value = result.sent ? 'ok' : 'error'
+    toast.add({
+      title: result.sent ? 'Event sent: ops/digest.requested' : 'Inngest send failed',
+      description: result.sent ? `ids: ${(result.ids ?? []).join(', ')}` : result.error,
+      color: result.sent ? 'success' : 'warning'
+    })
+  } catch (caught: unknown) {
+    const e = caught as CaughtError
+    digestStatus.value = 'error'
+    toast.add({
+      title: 'Send digest request failed',
+      description: e?.data?.statusMessage || e?.message || 'Unknown error',
+      color: 'error'
+    })
   }
 }
 
@@ -823,6 +853,66 @@ function getStatusClasses(status: CheckStatus) {
                     <UIcon name="i-lucide-info" class="size-3 inline-block mr-1" />
                     Set <code>RESEND_ALLOW_SEND=1</code> + <code>RESEND_API_KEY</code> in dev to actually send.
                     Without them, the call returns a guarded skip status.
+                  </p>
+                </div>
+              </div>
+            </template>
+
+            <!-- Inngest -->
+            <template #inngest>
+              <div class="pt-4 space-y-4">
+                <div class="rounded-lg border border-default bg-elevated/30 p-4">
+                  <div class="flex items-center gap-3 mb-3">
+                    <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <UIcon name="i-lucide-workflow" class="size-5 text-primary" />
+                    </div>
+                    <div>
+                      <p class="font-medium text-highlighted">
+                        Send digest event
+                      </p>
+                      <p class="text-xs text-muted">
+                        Fires <code>ops/digest.requested</code> so <code>generate-digest</code> runs on demand.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <UButton
+                      color="primary"
+                      variant="soft"
+                      icon="i-lucide-play"
+                      :loading="digestStatus === 'checking'"
+                      @click="sendDigestEvent"
+                    >
+                      Send digest event
+                    </UButton>
+                    <UBadge
+                      v-if="digestResult"
+                      :color="digestResult.sent ? 'success' : 'warning'"
+                      variant="subtle"
+                      size="xs"
+                    >
+                      {{ digestResult.sent ? 'Sent' : 'Not sent' }}
+                    </UBadge>
+                  </div>
+
+                  <div v-if="digestResult" class="mt-3 p-3 rounded-md bg-muted border border-default">
+                    <p class="text-xs text-muted font-mono">
+                      sent: {{ digestResult.sent }}
+                    </p>
+                    <p v-if="digestResult.ids?.length" class="text-xs text-muted font-mono">
+                      ids: {{ digestResult.ids.join(', ') }}
+                    </p>
+                    <p v-if="digestResult.error" class="text-xs text-error font-mono">
+                      error: {{ digestResult.error }}
+                    </p>
+                  </div>
+
+                  <p class="mt-3 text-xs text-muted">
+                    <UIcon name="i-lucide-info" class="size-3 inline-block mr-1" />
+                    Needs the Inngest dev server (<code>npm run dev</code> starts it on
+                    <a href="http://localhost:8288" target="_blank" class="underline">localhost:8288</a>).
+                    In demo mode the run returns <code>{ skipped: 'demo' }</code>.
                   </p>
                 </div>
               </div>

@@ -246,7 +246,7 @@ cosmo/
 
 ---
 
-### Sprint 6: Billing hardening, Inngest conventions, vitest harness [Not Started]
+### Sprint 6: Billing hardening, Inngest conventions, vitest harness [Complete]
 **Goal:** The Stripe webhook is idempotent and preview-safe, the one remaining Inngest worker is a correct template of Daylight's conventions, and `npm test` exists with a handful of seed tests that pin the load-bearing behavior.
 **Estimated effort:** 4 hours
 
@@ -257,11 +257,17 @@ cosmo/
 - 6.4 **Vitest.** `src/vitest.config.ts` (Daylight/aide 16-line, node env, `{server,app}/**/*.{test,spec}.ts`, `~`/`@` aliases), devDep `vitest ^3.2.4`. Helpers `src/server/__tests__/helpers/{h3-globals.ts, supabase-mock.ts (generic chainable stub), stripe-mock.ts, webhook-signature.ts}` from Daylight (trimmed). Three seed tests prove the harness (a template needs the shape, not coverage): `server/__tests__/utils/billing.test.ts` (aide's 30-line stub-mode test), `server/__tests__/api/stripe-webhook.test.ts` (bad signature → 400, duplicate event → `{ duplicate: true }`, test-mode-in-prod → ignored; 3 JSON fixtures under `__tests__/fixtures/stripe-events/`), `app/navigation.routes.test.ts` (aide's: every `useNavigation` route has a page file — the exact bug Sprint 1 fixed). Tests use relative imports, `vi.mock('#supabase/server', …)` inline. Add the `npm test` step to `.github/workflows/ci.yml`.
 - 6.5 Make sure `npm test` passes with zero env (the CI property). The scripts table lands in the root README in Sprint 7 (Camera Shy shape — no `src/README.md`).
 
+#### Deviations (2026-08-19)
+- **Pre-existing bug fixed:** inngest v4 defaults to cloud mode and refused to serve without `INNGEST_SIGNING_KEY` — `server/utils/inngest.ts` now sets `isDev: import.meta.dev || undefined` so `npm run dev`'s Inngest half works for every clone.
+- `generate-digest`'s old `debounce: '2m'` dropped (would delay the on-demand button by 2 min). Inngest's auto-generated `generate-digest (failure)` companion (any `onFailure`) shows as a second row in the dev UI.
+- Checkout price selection was already server-authoritative (client sends no body) — documented, no change. `seed-user.mjs` requires the email arg (no default). vitest resolved to ^3.2.7. `predev` pkill comment lives inside the script string.
+- Verified with the manual pair `npx nuxt dev --port 3123` + `npx inngest-cli dev -u … --port 8288` (port 3000 was taken by another project during execution). Screenshots `sprint6_devtools_inngest.webp`, `sprint6_inngest_runs.webp`.
+
 #### Verification
-- [ ] `npm test` → all green with no `.env` (CI property); `npm test -- --reporter=verbose` output pasted into `verification/samples/sprint6_vitest.txt`.
-- [ ] `grep -n "processed_stripe_events\|livemode\|idempotencyKey" src/server/api/stripe/*.ts` hits in the right files; `grep -rn "cosmo/item.created\|cosmo/digest" src/` → nothing.
-- [ ] `npm run dev` boots both processes; the Inngest dev UI (`http://localhost:8288`) lists exactly `generate-digest`; clicking "Send digest event" on `/internal/dev-tools` in demo mode shows the function ran and returned `{ skipped: 'demo' }` (screenshot `sprint6_inngest_devui.webp`).
-- [ ] typecheck 0, lint 0, build green.
+- [x] `npm test` → all green with no `.env` (CI property; 3 files / 21 tests); `npm test -- --reporter=verbose` output pasted into `verification/samples/sprint6_vitest.txt`.
+- [x] `grep -n "processed_stripe_events\|livemode\|idempotencyKey" src/server/api/stripe/*.ts` hits in the right files; `grep -rn "cosmo/item.created\|cosmo/digest" src/` → nothing.
+- [x] `npm run dev` boots both processes; the Inngest dev UI (`http://localhost:8288`) lists exactly `generate-digest`; clicking "Send digest event" on `/internal/dev-tools` in demo mode shows the function ran and returned `{ skipped: 'demo' }` (screenshot `sprint6_inngest_devui.webp`).
+- [x] typecheck 0, lint 0, build green.
 
 ---
 

@@ -4,8 +4,13 @@
  * Stub mode: returns `{ ok: true, stub: true }` so a clone with no Stripe
  * configured can still safely receive a misdirected request without 500s.
  *
- * Live mode: ports Margin's full handler.
+ * Live mode: ports Margin's full handler + Daylight's two safety rails.
  *   - Verifies signature against STRIPE_WEBHOOK_SECRET.
+ *   - Ignores `livemode: false` events when VERCEL_ENV=production (a Stripe
+ *     CLI forward or test-mode smoke checkout must never touch prod data).
+ *   - Insert-first idempotency against `processed_stripe_events` (0011):
+ *     unique-violation 23505 → `{ received: true, duplicate: true }`; any
+ *     other insert error is logged and the event is processed anyway.
  *   - Routes checkout.session.completed → upsert subscriptions row.
  *   - Routes customer.subscription.{created,updated,deleted} → update subs.
  *   - Routes invoice.payment_failed → status='past_due'.
@@ -53,9 +58,40 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid signature.' })
   }
 
+  // Test-mode events must never touch production data. The live endpoint
+  // should only ever see livemode events, but a Stripe CLI forward or a
+  // test-mode smoke checkout can slip a `livemode:false` event through — that
+  // is how a phantom test "sale" polluted Daylight's funnel twice. In the real
+  // prod deployment, acknowledge and ignore so Stripe stops retrying.
+  // Dev/preview still process test events (that is how the webhook is exercised).
+  if (stripeEvent.livemode === false && process.env.VERCEL_ENV === 'production') {
+    console.warn(`[stripe-webhook] ignoring test-mode event ${stripeEvent.id} (${stripeEvent.type}) in production`)
+    return { received: true, ignored: 'test_mode' }
+  }
+
   // No generated database.types.ts yet: widen the `SupabaseClient<unknown>` the
   // module returns to the default (`any`-schema) client so `.from()` typechecks.
   const supabase = serverSupabaseServiceRole(event) as SupabaseClient
+
+  // Idempotency: log the event id BEFORE doing any work. Stripe retries on any
+  // non-2xx / timeout, so the same event can arrive twice; the primary key on
+  // `processed_stripe_events` turns the second insert into a 23505 and we skip.
+  // Any other failure (table missing, transient DB error) degrades gracefully —
+  // the downstream upserts are keyed on the subscription, so reprocessing a
+  // duplicate is already a row-level no-op.
+  const { error: idempotencyError } = await supabase
+    .from('processed_stripe_events')
+    .insert({ event_id: stripeEvent.id, event_type: stripeEvent.type })
+
+  if (idempotencyError) {
+    if (idempotencyError.code === '23505') {
+      console.log(`[stripe-webhook] duplicate event ${stripeEvent.id}, skipping`)
+      return { received: true, duplicate: true }
+    }
+    console.warn(
+      `[stripe-webhook] idempotency log failed (${idempotencyError.code ?? 'unknown'}: ${idempotencyError.message ?? ''}); processing anyway`
+    )
+  }
 
   switch (stripeEvent.type) {
     case 'checkout.session.completed': {
