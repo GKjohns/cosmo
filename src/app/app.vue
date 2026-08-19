@@ -1,23 +1,47 @@
 <script setup lang="ts">
 const colorMode = useColorMode()
+const route = useRoute()
 
 // Theme color tracks the brand bg in light mode, the slate-950 chrome in dark.
 const themeColor = computed(() => colorMode.value === 'dark' ? '#09090B' : '#FFFFFF')
 // Loading indicator picks up the accent so it stays visible against either bg.
 const loadingIndicatorColor = computed(() => colorMode.value === 'dark' ? '#E2E8F0' : '#0F172A')
 
+// Every crawler-facing absolute URL hangs off SITE.url (`app/utils/site.ts`).
+// Trailing slashes are stripped so /app and /app/ don't advertise two
+// canonicals.
+const canonical = computed(() => SITE.url + (route.path === '/' ? '' : route.path.replace(/\/$/, '')))
+
+// Icon and manifest links live in nuxt.config's app.head — one place, so the
+// favicon isn't declared twice in the rendered <head>.
 useHead({
   meta: [
+    { charset: 'utf-8' },
+    { name: 'viewport', content: 'width=device-width, initial-scale=1' },
     { key: 'theme-color', name: 'theme-color', content: themeColor }
-  ]
+  ],
+  link: [
+    { rel: 'canonical', href: canonical }
+  ],
+  htmlAttrs: {
+    lang: 'en'
+  }
 })
 
 useSeoMeta({
-  // Smart title append: bare "Cosmo" stays as-is; everything else gets " | Cosmo".
-  titleTemplate: (titleChunk?: string) => {
-    if (!titleChunk || titleChunk === 'Cosmo') return 'Cosmo'
-    return titleChunk.includes('Cosmo') ? titleChunk : `${titleChunk} | Cosmo`
-  },
+  title: SITE.name,
+  titleTemplate: `%s · ${SITE.name}`,
+  description: SITE.description,
+  ogTitle: SITE.name,
+  ogDescription: SITE.description,
+  ogType: 'website',
+  ogSiteName: SITE.name,
+  ogUrl: canonical,
+  ogImage: `${SITE.url}/og-image.png`,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageType: 'image/png',
+  ogImageAlt: SITE.name,
   twitterCard: 'summary_large_image'
 })
 
@@ -27,28 +51,6 @@ const { data: navigation } = await useAsyncData('navigation', () => queryCollect
 const { data: files } = useLazyAsyncData('search', () => queryCollectionSearchSections('docs'), {
   server: false
 })
-
-const links = [{
-  label: 'Docs',
-  icon: 'i-lucide-book',
-  to: '/docs/getting-started'
-}, {
-  label: 'Pricing',
-  icon: 'i-lucide-credit-card',
-  to: '/pricing'
-}, {
-  label: 'Blog',
-  icon: 'i-lucide-pencil',
-  to: '/blog'
-}, {
-  label: 'Changelog',
-  icon: 'i-lucide-history',
-  to: '/changelog'
-}, {
-  label: 'Help',
-  icon: 'i-lucide-life-buoy',
-  to: '/help'
-}]
 
 provide('navigation', navigation)
 </script>
@@ -66,7 +68,7 @@ provide('navigation', navigation)
         :files="files"
         shortcut="meta_k"
         :navigation="navigation"
-        :links="links"
+        :links="navLinks"
         :fuse="{ resultLimit: 42 }"
       />
     </ClientOnly>

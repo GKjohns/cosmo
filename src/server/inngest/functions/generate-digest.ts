@@ -25,7 +25,10 @@ export const generateDigest = inngest.createFunction(
     debounce: { period: '2m' }
   },
   async ({ event, step }) => {
-    const supabase = serverSupabaseAdmin()
+    // Demo mode (no Supabase env): nothing to digest, and a client built
+    // against nothing would throw. No-op with a reason instead.
+    const supabase = createServiceClient()
+    if (!supabase) return { processed: 0, results: [], skipped: 'demo' }
 
     // Cron triggers carry no payload; the on-demand event may scope to one org.
     const requestedOrgId = (event.data as { organizationId?: string } | undefined)?.organizationId

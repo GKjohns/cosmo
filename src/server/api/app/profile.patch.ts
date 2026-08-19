@@ -1,5 +1,6 @@
 import * as z from 'zod'
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { isDemoMode } from '../../utils/runtimeKeys'
 import { DEMO_PROFILE } from '../../utils/demoStore'
 
@@ -52,7 +53,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid profile update.' })
   }
 
-  const admin = serverSupabaseAdmin()
+  const admin: SupabaseClient = serverSupabaseServiceRole(event)
   const payload = parsed.data
   const updates: Record<string, unknown> = {
     updated_at: new Date().toISOString()

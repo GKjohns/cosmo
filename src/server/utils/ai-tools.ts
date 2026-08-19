@@ -1,5 +1,6 @@
 import { tool } from 'ai'
 import * as z from 'zod'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * AI tools for System 1 (Vercel AI SDK streaming chat).
@@ -14,7 +15,7 @@ import * as z from 'zod'
  * `app/components/chat/MessageContent.vue`'s switch.
  */
 export function createAITools(params: {
-  supabase: ReturnType<typeof serverSupabaseAdmin>
+  supabase: SupabaseClient
   organizationId: string
   userId?: string
 }) {

@@ -105,7 +105,7 @@ export function useTimezone() {
   }
 
   watch([profile, isFetched], async ([profileData, fetched]) => {
-    if (!user.value?.id) {
+    if (!userIdFromSupabaseUser(user.value)) {
       userTimezone.value = detectBrowserTimezone()
       isSynced.value = false
       return

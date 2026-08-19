@@ -1,5 +1,5 @@
-import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
-import { requireEmployee } from '../../../utils/auth'
+import { requireEmployee } from '../../../utils/requireEmployee'
+import { isDemoMode } from '../../../utils/runtimeKeys'
 
 interface CreateTestUserResponse {
   userId: string
@@ -13,27 +13,25 @@ interface CreateTestUserResponse {
  * - Generates a unique `test+<ts>@<domain>` email
  * - `auth.admin.createUser` with `email_confirm: true` (skips the verify step)
  * - Upserts the matching `profiles` row with `is_test_user = true` +
- *   `is_employee = true` so the test user can hit /app/admin and /app/dev-tools
+ *   `is_employee = true` so the test user can hit /internal/**
  * - Generates a magic link that lands on `/auth/confirm?redirect=/app`
  *
- * Brand domain comes from `useRuntimeConfig().testUserEmailDomain` (falls back
- * to `monumentlabs.io`). Projects override via env (`TEST_USER_EMAIL_DOMAIN`).
+ * Address domain comes from `useRuntimeConfig().testUserEmailDomain`
+ * (`TEST_USER_EMAIL_DOMAIN`, default `cosmo.test` — non-routable on purpose).
  */
 export default defineEventHandler(async (event): Promise<CreateTestUserResponse> => {
-  const supabase = await serverSupabaseClient(event)
-  const requesterId = await requireEmployee(event, supabase)
+  const { userId: requesterId, supabase: serviceClient } = await requireEmployee(event)
 
-  const cfg = useRuntimeConfig()
-  const domain
-    = (cfg.testUserEmailDomain as string)
-      || process.env.TEST_USER_EMAIL_DOMAIN
-      || 'monumentlabs.io'
+  // Demo mode: there is no auth.users to create into.
+  if (isDemoMode(event) || !serviceClient) {
+    throw createError({ statusCode: 503, statusMessage: 'Test users need a live Supabase project (demo mode).' })
+  }
+
+  const domain = useRuntimeConfig(event).testUserEmailDomain || 'cosmo.test'
 
   const timestamp = Date.now()
   const email = `test+${timestamp}@${domain}`
   const password = `TestUser_${timestamp}!`
-
-  const serviceClient = serverSupabaseServiceRole(event)
 
   const { data: createData, error: userCreateError } = await serviceClient.auth.admin.createUser({
     email,
@@ -54,8 +52,7 @@ export default defineEventHandler(async (event): Promise<CreateTestUserResponse>
 
   // Mark profile (the trigger from 001 already inserted a row, so upsert wins
   // the race regardless of order).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: upsertError } = await (serviceClient as any)
+  const { error: upsertError } = await serviceClient
     .from('profiles')
     .upsert(
       {

@@ -22,7 +22,8 @@
  */
 
 import { Resend } from 'resend'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { createServiceClient } from './worker-client'
 
 // Default (`any`-schema) client — projects without generated types still compile.
 type AnyClient = SupabaseClient
@@ -202,15 +203,6 @@ function envHasResendConfig(): { resend: Resend, from: string } | null {
   return { resend: new Resend(cfg.apiKey), from }
 }
 
-function createServiceClient(): AnyClient {
-  const url = process.env.SUPABASE_URL
-  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
-  if (!url || !secret) {
-    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in email.ts')
-  }
-  return createClient(url, secret, { auth: { persistSession: false } })
-}
-
 interface PgError { code?: string, message?: string }
 
 type EmailSendsRow = {
@@ -299,7 +291,13 @@ async function updateSendRow(
 export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult> {
   const { userId, template, dedupeKey, subject, html, text } = opts
 
+  // 0. Demo mode (no Supabase env): no `email_sends` table to dedupe against
+  // and no auth.users to look up — treat exactly like missing Resend config.
   const supabase = createServiceClient()
+  if (!supabase) {
+    console.warn('[email] no Supabase env — skipping send', { template, userId })
+    return { status: 'skipped_missing_config' }
+  }
 
   // 1. Missing config
   const config = envHasResendConfig()

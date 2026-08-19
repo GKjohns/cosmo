@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const schema = z.object({
   name: z.string().min(2).max(100)
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
   const supabase = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
   const body = await readValidatedBody(event, schema.parse)
-  const admin = serverSupabaseAdmin()
+  const admin: SupabaseClient = serverSupabaseServiceRole(event)
 
   const baseSlug = body.name
     .toLowerCase()

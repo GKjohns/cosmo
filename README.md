@@ -44,7 +44,7 @@ parallel.
 
 ```bash
 cp .env.example .env
-# uncomment AI_GATEWAY_API_KEY and paste your Vercel AI Gateway key
+# paste your Vercel AI Gateway key into AI_GATEWAY_API_KEY=
 npm run dev
 ```
 
@@ -54,22 +54,25 @@ gateway key is the only AI credential cosmo reads.
 
 ### Turning on Supabase
 
-Set all three of `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and
-`SUPABASE_SERVICE_ROLE_KEY` in `.env`, then run the SQL under
-`supabase/migrations/` against the project. Real auth replaces the demo
-shim automatically.
+Set all three of `SUPABASE_URL`, `SUPABASE_KEY` (publishable), and
+`SUPABASE_SECRET_KEY` in `.env`, then run the SQL under `db_migrations/`
+against the project. Real auth replaces the demo shim automatically; the
+boot banner says `Supabase: live` (or `DEMO MODE`) so there is never a
+question which world you're in. The legacy `SUPABASE_ANON_KEY` /
+`SUPABASE_SERVICE_ROLE_KEY` names still work but print a rename warning —
+the Vercel↔Supabase integration injects them.
 
-Stripe, Resend, and Inngest follow the same shape — uncomment the keys in
-`.env.example` to flip them live. The "configured?" detection lives in
-[`server/utils/runtimeKeys.ts`](server/utils/runtimeKeys.ts).
+Stripe, Resend, and Inngest follow the same shape — fill in the keys in
+`.env` to flip them live. The "configured?" detection lives in
+[`src/server/utils/runtimeKeys.ts`](src/server/utils/runtimeKeys.ts).
 
 ## Per-project setup
 
 When you clone cosmo into a new project:
 
-1. Copy `.cursor/mcp.json.example` to `.cursor/mcp.json` and fill in `{{PROJECT_REF}}` and `{{SUPABASE_ACCESS_TOKEN}}`. The live file is gitignored — never commit it.
-2. Update brand copy in `package.json`, `README.md`, `nuxt.config.ts`, and `app/components/AppLogo.vue`.
-3. Run `supabase/migrations/001_initial.sql` on the new project.
+1. Copy `.cursor/mcp.json.example` to `.cursor/mcp.json` (Cursor) and `.mcp.json.example` to `.mcp.json` (Claude Code) and fill in `{{PROJECT_REF}}` and `{{SUPABASE_ACCESS_TOKEN}}`. Both live files are gitignored — never commit them.
+2. Rebrand: `src/app/utils/site.ts` (name / description / url — feeds the head, OG, JSON-LD, sitemap), `src/public/site.webmanifest` + `robots.txt`, `package.json`, `README.md`, and `src/app/components/AppLogo.vue`; regenerate `src/public/*.png` from `favicon.svg` with the `brand-assets` skill.
+3. Run the SQL under `db_migrations/` on the new project.
 
 ## Conventions
 

@@ -4,18 +4,15 @@
  *   - uptime monitors / load balancers
  *   - smoke tests
  *
- * No DB calls — just confirms the Nuxt server is alive and responding.
+ * No DB calls — just confirms the Nuxt server is alive and says which world
+ * it's in (`demoMode` mirrors the boot banner).
  */
-export default defineEventHandler(() => {
-  const now = new Date()
+import { isDemoMode } from '../utils/runtimeKeys'
+
+export default defineEventHandler((event) => {
   return {
     ok: true,
-    ts: now.toISOString(),
-    serverTime: now.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
-    })
+    ts: new Date().toISOString(),
+    demoMode: isDemoMode(event)
   }
 })

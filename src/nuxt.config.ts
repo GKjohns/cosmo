@@ -1,25 +1,43 @@
+import { SITE } from './app/utils/site'
+
 /**
  * Demo-first defaults: when Supabase env vars are missing, the @nuxtjs/supabase
  * module still needs *something* to boot. We feed it harmless dummies; every
  * server call site guards with `isSupabaseConfigured()` and short-circuits to
  * canned demo data before touching the network. See `server/utils/runtimeKeys.ts`.
+ *
+ * Env names are the fleet's (`SUPABASE_URL` / `SUPABASE_KEY` /
+ * `SUPABASE_SECRET_KEY`). The legacy `SUPABASE_ANON_KEY` /
+ * `SUPABASE_SERVICE_ROLE_KEY` pair is still honored — the Vercel↔Supabase
+ * integration and copied sibling `.env`s inject them — via the same fallback
+ * chain `runtimeKeys.ts` uses, so the module and `isDemoMode()` can never
+ * disagree. `server/plugins/boot-banner.ts` prints a one-line rename warning.
  */
 const DEMO_SUPABASE_URL = 'https://demo.supabase.invalid'
-const DEMO_SUPABASE_ANON_KEY = 'demo-anon-key'
+const DEMO_SUPABASE_KEY = 'demo-anon-key'
 
-const supabaseUrl = process.env.SUPABASE_URL || DEMO_SUPABASE_URL
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || DEMO_SUPABASE_ANON_KEY
-const isDemoMode = !process.env.SUPABASE_URL
-  || !process.env.SUPABASE_ANON_KEY
-  || !process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_KEY
+  || process.env.SUPABASE_PUBLISHABLE_KEY
+  || process.env.SUPABASE_ANON_KEY
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY
+  || process.env.SUPABASE_SERVICE_ROLE_KEY
+const isDemoMode = !supabaseUrl || !supabaseKey || !supabaseSecretKey
 
 export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui',
+    // Must load before @nuxt/content so the collection integration
+    // (`defineSitemapSchema()` in content.config.ts) picks up blog/docs slugs.
+    '@nuxtjs/sitemap',
     '@nuxt/content',
     '@comark/nuxt',
     '@nuxtjs/supabase',
+    // Vercel Web Analytics — client-only plugin that injects Vercel's script
+    // and renders nothing. The Nuxt module lives at the `/nuxt` subpath; the
+    // bare `@vercel/analytics` id is the plain JS SDK, not a Nuxt module.
+    '@vercel/analytics/nuxt',
     '@vueuse/nuxt'
   ],
 
@@ -27,79 +45,30 @@ export default defineNuxtConfig({
     enabled: true
   },
 
-  /*
-   * Head meta — placeholders templated as {{TITLE}} / {{DESCRIPTION}} / {{URL}}.
-   * Projects search-and-replace these on bootstrap (see
-   * `~/claude-ops/conventions/project_bootstrap.md`).
-   */
+  // Icon and manifest links are declared here and nowhere else — the rest of
+  // the head (charset/viewport/theme-color/canonical + the SEO meta block)
+  // lives in `app/app.vue`. Brand name/description/url: `app/utils/site.ts`.
   app: {
     head: {
       htmlAttrs: {
         lang: 'en'
       },
-      title: 'Cosmo',
       link: [
-        { rel: 'icon', href: '/favicon.ico' }
-      ],
-      meta: [
-        { charset: 'utf-8' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-
-        // Basic SEO
-        { name: 'description', content: '{{DESCRIPTION}}' },
-        { name: 'author', content: '{{TITLE}}' },
-        { name: 'robots', content: 'index, follow' },
-
-        // Open Graph
-        { property: 'og:type', content: 'website' },
-        { property: 'og:site_name', content: '{{TITLE}}' },
-        { property: 'og:title', content: '{{TITLE}}' },
-        { property: 'og:description', content: '{{DESCRIPTION}}' },
-        { property: 'og:locale', content: 'en_US' },
-        { property: 'og:url', content: '{{URL}}' },
-
-        // Twitter Card
-        { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:title', content: '{{TITLE}}' },
-        { name: 'twitter:description', content: '{{DESCRIPTION}}' },
-
-        // App-specific
-        { name: 'application-name', content: '{{TITLE}}' },
-        { name: 'apple-mobile-web-app-title', content: '{{TITLE}}' },
-        { name: 'apple-mobile-web-app-capable', content: 'yes' },
-        { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-        { name: 'mobile-web-app-capable', content: 'yes' },
-        { name: 'format-detection', content: 'telephone=no' }
-      ],
-      script: [
-        // Schema.org structured data — fill placeholders on project bootstrap.
-        {
-          type: 'application/ld+json',
-          innerHTML: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'SoftwareApplication',
-            'name': '{{TITLE}}',
-            'url': '{{URL}}',
-            'applicationCategory': 'BusinessApplication',
-            'operatingSystem': 'Web',
-            'description': '{{DESCRIPTION}}',
-            'offers': {
-              '@type': 'Offer',
-              'price': '0',
-              'priceCurrency': 'USD'
-            },
-            'publisher': {
-              '@type': 'Organization',
-              'name': '{{TITLE}}',
-              'url': '{{URL}}'
-            }
-          })
-        }
+        { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
+        { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'manifest', href: '/site.webmanifest' }
       ]
     }
   },
 
   css: ['~/assets/css/main.css'],
+
+  // Feeds @nuxtjs/sitemap (absolute URLs) and nuxt-site-config.
+  site: {
+    url: SITE.url,
+    name: SITE.name
+  },
 
   // Default to light. Users toggle via the color-mode button.
   colorMode: {
@@ -127,9 +96,6 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     aiGatewayApiKey: process.env.AI_GATEWAY_API_KEY,
-    supabaseUrl: process.env.SUPABASE_URL,
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     inngestEventKey: process.env.INNGEST_EVENT_KEY,
     inngestSigningKey: process.env.INNGEST_SIGNING_KEY,
 
@@ -146,9 +112,11 @@ export default defineNuxtConfig({
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     stripePriceId: process.env.STRIPE_PRICE_ID,
 
+    // Dev-tools test users get `test+<ts>@<domain>` addresses. Default is a
+    // non-routable TLD so nothing can ever bounce off a real mailbox.
+    testUserEmailDomain: process.env.TEST_USER_EMAIL_DOMAIN || 'cosmo.test',
+
     public: {
-      supabaseUrl: supabaseUrl,
-      supabaseAnonKey: supabaseAnonKey,
       stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
       // Surfaces "no real keys" to the client so middleware / composables /
       // pages can short-circuit. Mirrors `isDemoMode()` on the server.
@@ -156,7 +124,8 @@ export default defineNuxtConfig({
     }
   },
 
-  // Ensure Supabase modules are transpiled correctly for ESM / prerender.
+  // The Supabase packages ship ESM that Nitro's prerender/build step chokes on
+  // unless transpiled.
   build: {
     transpile: [
       '@supabase/supabase-js',
@@ -168,15 +137,29 @@ export default defineNuxtConfig({
     ]
   },
 
+  // Crawler hygiene for surfaces robots.txt can't fully cover. robots.txt only
+  // asks politely; these headers make the private surfaces non-indexable even
+  // when a URL leaks via a shared link or referrer. /internal is deliberately
+  // absent from robots.txt (a Disallow line would advertise the path), so this
+  // header is its only crawler signal. /auth/confirm carries single-use magic
+  // link codes — a cached copy in an index is a burned login link.
   routeRules: {
     '/docs': { redirect: '/docs/getting-started' },
+    // `/x/**` does not match `/x` itself, hence each pair.
+    '/app': { headers: { 'X-Robots-Tag': 'noindex' } },
+    '/app/**': { headers: { 'X-Robots-Tag': 'noindex' } },
+    '/internal': { headers: { 'X-Robots-Tag': 'noindex' } },
+    '/internal/**': { headers: { 'X-Robots-Tag': 'noindex' } },
+    '/auth/confirm': { headers: { 'X-Robots-Tag': 'noindex' } },
     '/api/**': { cors: true }
   },
 
-  // Smooth the chat empty-state -> /app/chat/<id> handoff
-  // (`[view-transition-name:chat-prompt]` on the prompt).
   experimental: {
-    viewTransition: true
+    // Smooth the chat empty-state -> /app/chat/<id> handoff
+    // (`[view-transition-name:chat-prompt]` on the prompt).
+    viewTransition: true,
+    // A stale chunk after a deploy reloads the page instead of white-screening.
+    emitRouteChunkError: 'automatic-immediate'
   },
 
   compatibilityDate: '2026-06-30',
@@ -190,6 +173,16 @@ export default defineNuxtConfig({
     // Bundle tslib helpers with the server for Vercel runtime.
     externals: {
       inline: ['tslib']
+    },
+
+    // Nitro deploys the whole server as one Vercel function, so this
+    // maxDuration is the ceiling for every API route (a ceiling, not a
+    // reservation — cost accrues on real duration). The AI routes run past
+    // the 10s default. Vercel clamps this to the plan max if lower.
+    vercel: {
+      functions: {
+        maxDuration: 60
+      }
     }
   },
 
@@ -229,13 +222,28 @@ export default defineNuxtConfig({
     }
   },
 
-  // Cosmo owns auth routing in `app/middleware/auth.global.ts`.
-  // `redirect: false` disables the module's auto-redirect, but the helpers
-  // still consult `redirectOptions` — keep the two in sync.
+  // `@iconify-json/lucide` (+ simple-icons, vscode-icons for Nuxt UI's docs
+  // code blocks) are installed, so every icon we use resolves locally. Without
+  // this, Nuxt Icon still fetches anything outside the client bundle from
+  // api.iconify.design — a third-party request on page load, seen in prod.
+  icon: {
+    fallbackToApi: false
+  },
+
+  // Private surfaces never belong in the sitemap; the noindex headers above
+  // are the belt, this is the suspenders.
+  sitemap: {
+    exclude: ['/app/**', '/auth/**', '/onboarding', '/internal/**']
+  },
+
+  // Auth. `redirect: false` because the module's built-in guard can't express
+  // "only /app/** is protected" — app/middleware/auth.global.ts owns routing
+  // (protected prefixes `/app`, `/internal`, `/onboarding`; everything else is
+  // public). redirectOptions still feeds the module's own login/callback paths.
   supabase: {
-    url: supabaseUrl,
-    key: supabaseAnonKey,
-    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || DEMO_SUPABASE_ANON_KEY,
+    url: supabaseUrl || DEMO_SUPABASE_URL,
+    key: supabaseKey || DEMO_SUPABASE_KEY,
+    secretKey: supabaseSecretKey || DEMO_SUPABASE_KEY,
     redirect: false,
     // No `database.types.ts` in a template — clones generate one and point
     // `types` at it (see project_bootstrap.md).
@@ -243,19 +251,21 @@ export default defineNuxtConfig({
     redirectOptions: {
       login: '/auth/login',
       callback: '/auth/confirm',
-      exclude: ['/', '/pricing', '/blog/**', '/docs/**', '/changelog/**']
+      exclude: ['/', '/auth/**']
     },
     cookieOptions: {
-      maxAge: 60 * 60 * 8,
-      sameSite: 'lax',
-      secure: !import.meta.dev
+      maxAge: 60 * 60 * 24 * 400, // 400 days — @supabase/ssr default; session validity is enforced server-side, so a short Max-Age is pure UX harm. NB: iOS Safari ITP caps JS-written cookies at ~7 days; only server Set-Cookie (SSR refresh) gets the full lifetime.
+      domain: '',
+      path: '/',
+      sameSite: 'lax'
     },
     clientOptions: {
       auth: {
         flowType: 'pkce',
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        persistSession: true
+        persistSession: true,
+        storage: undefined // let the module own storage via cookies
       }
     }
   }

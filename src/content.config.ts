@@ -1,4 +1,5 @@
 import { defineCollection, z } from '@nuxt/content'
+import { defineSitemapSchema } from '@nuxtjs/sitemap/content'
 
 const variantEnum = z.enum(['solid', 'outline', 'subtle', 'soft', 'ghost', 'link'])
 const colorEnum = z.enum(['primary', 'secondary', 'neutral', 'error', 'warning', 'success', 'info'])
@@ -71,9 +72,17 @@ export const collections = {
       })
     })
   }),
+  // A `sitemap` field is what registers a collection's pages (docs, blog
+  // posts) with @nuxtjs/sitemap; the static routes come from `app/pages` on
+  // their own. `{ z }` is passed so the field is built with @nuxt/content's
+  // own zod copy — the module's default instance is a different version and
+  // fails schema generation.
   docs: defineCollection({
     source: '1.docs/**/*',
-    type: 'page'
+    type: 'page',
+    schema: z.object({
+      sitemap: defineSitemapSchema({ z })
+    })
   }),
   pricing: defineCollection({
     source: '2.pricing.yml',
@@ -116,6 +125,7 @@ export const collections = {
     source: '3.blog/**/*',
     type: 'page',
     schema: z.object({
+      sitemap: defineSitemapSchema({ z }),
       image: z.object({ src: z.string().nonempty().editor({ input: 'media' }) }),
       authors: z.array(
         z.object({

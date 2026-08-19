@@ -35,16 +35,21 @@ npm run dev
 ```
 
 Cosmo boots clean with no `.env`. Every external dependency (Supabase,
-OpenAI, Stripe, Resend, Inngest) is optional — `server/utils/runtimeKeys.ts`
+the AI Gateway, Stripe, Resend, Inngest) is optional — `server/utils/runtimeKeys.ts`
 holds the "configured?" checks every endpoint reads. When Supabase isn't
 configured, `requireUserId` returns the fixture demo user and the
 `/api/app/*` + `/api/chats*` endpoints short-circuit to canned data /
 an in-memory chat store. The auth middleware lets `/app/*` through without
-a session.
+a session. Employee-only surfaces live under `/internal/**` (page middleware
+`internal`, server `requireEmployee`) and answer 404 — never 403 — to
+non-employees.
 
 To turn on AI for the demo, drop `AI_GATEWAY_API_KEY=…` in `.env` and
-restart. To turn on real Supabase, set `SUPABASE_URL` / `SUPABASE_ANON_KEY` /
-`SUPABASE_SERVICE_ROLE_KEY` and run the SQL under `supabase/migrations/`.
+restart. To turn on real Supabase, set `SUPABASE_URL` / `SUPABASE_KEY` /
+`SUPABASE_SECRET_KEY` and run the SQL under `db_migrations/`. The boot
+banner prints `DEMO MODE` or `Supabase: live`; the legacy
+`SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` names still work but warn.
+Site name / description / url live in `src/app/utils/site.ts`, not env.
 
 The `dev` script boots Nuxt and `inngest-cli` in parallel via `concurrently`.
 
@@ -52,9 +57,9 @@ The `dev` script boots Nuxt and `inngest-cli` in parallel via `concurrently`.
 
 When you clone cosmo into a new project:
 
-1. Copy `.cursor/mcp.json.example` to `.cursor/mcp.json` and fill in `{{PROJECT_REF}}` (Supabase project ref) and `{{SUPABASE_ACCESS_TOKEN}}` (personal access token from Supabase → Account → Access Tokens). The live file is gitignored — never commit it.
-2. Update brand copy in `package.json`, `README.md`, `nuxt.config.ts` (head meta), and `app/components/AppLogo.vue`.
-3. Run the migrations under `supabase/migrations/` against the new Supabase project (`001`-`007` ship today).
+1. Copy `.cursor/mcp.json.example` to `.cursor/mcp.json` (Cursor) and `.mcp.json.example` to `.mcp.json` (Claude Code); fill in `{{PROJECT_REF}}` (Supabase project ref) and `{{SUPABASE_ACCESS_TOKEN}}` (personal access token from Supabase → Account → Access Tokens). Both live files are gitignored — never commit them.
+2. Rebrand: `src/app/utils/site.ts` (the single name / description / url point), `src/public/site.webmanifest` + `robots.txt`, `package.json`, `README.md`, `src/app/components/AppLogo.vue`; regenerate the icon set + `og-image.png` from `favicon.svg` with the `brand-assets` skill.
+3. Run the migrations under `db_migrations/` against the new Supabase project.
 
 ## Billing — stub by default
 

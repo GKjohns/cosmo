@@ -1,5 +1,5 @@
-import { serverSupabaseClient } from '#supabase/server'
-import { requireEmployee } from '../../utils/auth'
+import { requireEmployee } from '../../utils/requireEmployee'
+import { isDemoMode } from '../../utils/runtimeKeys'
 import { sendEmail, renderEditorialEmail, renderEditorialEmailText } from '../../utils/email'
 
 /**
@@ -16,8 +16,13 @@ import { sendEmail, renderEditorialEmail, renderEditorialEmailText } from '../..
  * type in" abuse and matches Margin/Daylight's pattern.
  */
 export default defineEventHandler(async (event): Promise<{ status: string, error?: string, dedupeKey: string }> => {
-  const supabase = await serverSupabaseClient(event)
-  const userId = await requireEmployee(event, supabase)
+  const { userId } = await requireEmployee(event)
+
+  // Demo mode: no Resend, no `email_sends` table — report the truthful status
+  // the wrapper would reach anyway, without building a dead client.
+  if (isDemoMode(event)) {
+    return { status: 'skipped_missing_config', dedupeKey: `dev_smoke:${Date.now()}` }
+  }
 
   // sendEmail() will short-circuit on `skipped_employee` because the calling
   // user is an employee. To exercise the full Resend path we temporarily
@@ -38,7 +43,7 @@ export default defineEventHandler(async (event): Promise<{ status: string, error
       'If you received it, the Resend integration is wired correctly. If the response said "skipped_employee" or "skipped_dev_gate", that\'s also fine — both mean the guards are doing their job.'
     ],
     ctaLabel: 'Open dev-tools',
-    ctaUrl: `${getRequestURL(event).origin}/app/dev-tools`,
+    ctaUrl: `${getRequestURL(event).origin}/internal/dev-tools`,
     signoff: 'Cosmo Dev Tools'
   })
 
@@ -50,7 +55,7 @@ export default defineEventHandler(async (event): Promise<{ status: string, error
       'If you received it, the Resend integration is wired correctly. If the response said "skipped_employee" or "skipped_dev_gate", that\'s also fine — both mean the guards are doing their job.'
     ],
     ctaLabel: 'Open dev-tools',
-    ctaUrl: `${getRequestURL(event).origin}/app/dev-tools`,
+    ctaUrl: `${getRequestURL(event).origin}/internal/dev-tools`,
     signoff: 'Cosmo Dev Tools'
   })
 

@@ -1,5 +1,5 @@
-import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
-import { requireEmployee } from '../../../utils/auth'
+import { requireEmployee } from '../../../utils/requireEmployee'
+import { isDemoMode } from '../../../utils/runtimeKeys'
 import { deleteTestUserAndData } from '../../../utils/test-user-deletion'
 
 type BulkDeleteBody = {
@@ -22,8 +22,10 @@ function sleep(ms: number): Promise<void> {
  */
 export default defineEventHandler(
   async (event): Promise<{ total: number, deleted: number, failed: number, matched?: number, sleepMs?: number }> => {
-    const supabase = await serverSupabaseClient(event)
-    await requireEmployee(event, supabase)
+    const { supabase: serviceClient } = await requireEmployee(event)
+
+    // Demo mode: nothing to delete.
+    if (isDemoMode(event) || !serviceClient) return { total: 0, deleted: 0, failed: 0, matched: 0 }
 
     const body = await readBody<BulkDeleteBody>(event).catch(() => ({} as BulkDeleteBody))
 
@@ -36,10 +38,7 @@ export default defineEventHandler(
       cutoffDate.setDate(cutoffDate.getDate() - olderThanDays)
     }
 
-    const serviceClient = serverSupabaseServiceRole(event)
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (serviceClient as any)
+    let query = serviceClient
       .from('profiles')
       .select('id, created_at')
       .eq('is_test_user', true)

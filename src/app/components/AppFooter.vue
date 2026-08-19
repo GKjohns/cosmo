@@ -1,52 +1,38 @@
 <script setup lang="ts">
 const columns = [{
-  label: 'Operations',
+  label: 'Product',
   children: [{
-    label: 'Fleet Status'
+    label: 'Pricing',
+    to: '/pricing'
   }, {
-    label: 'Mission Planning'
+    label: 'Changelog',
+    to: '/changelog'
   }, {
-    label: 'Crew Assignments'
-  }, {
-    label: 'Sensor Data'
+    label: 'Blog',
+    to: '/blog'
   }]
 }, {
-  label: 'Support',
+  label: 'Resources',
   children: [{
-    label: 'Help Center'
+    label: 'Documentation',
+    to: '/docs'
   }, {
-    label: 'Documentation'
+    label: 'Getting started',
+    to: '/docs/getting-started'
   }, {
-    label: 'Training'
-  }, {
-    label: 'API Reference'
+    label: 'Help center',
+    to: '/help'
   }]
 }, {
-  label: 'Organization',
+  label: 'Account',
   children: [{
-    label: 'About'
+    label: 'Sign in',
+    to: '/auth/login'
   }, {
-    label: 'Careers'
-  }, {
-    label: 'Contact'
-  }, {
-    label: 'Partners'
+    label: 'Request access',
+    to: '/auth/signup'
   }]
 }]
-
-const toast = useToast()
-
-const email = ref('')
-const loading = ref(false)
-
-function onSubmit() {
-  loading.value = true
-
-  toast.add({
-    title: 'Subscribed!',
-    description: 'You\'ve been added to fleet briefings.'
-  })
-}
 </script>
 
 <template>
@@ -58,39 +44,13 @@ function onSubmit() {
   <UFooter :ui="{ top: 'border-b border-default' }">
     <template #top>
       <UContainer>
-        <UFooterColumns :columns="columns">
-          <template #right>
-            <form @submit.prevent="onSubmit">
-              <UFormField
-                name="email"
-                label="Subscribe to fleet briefings"
-                size="lg"
-              >
-                <UInput
-                  v-model="email"
-                  type="email"
-                  class="w-full"
-                  placeholder="Enter your email"
-                >
-                  <template #trailing>
-                    <UButton
-                      type="submit"
-                      size="xs"
-                      color="neutral"
-                      label="Subscribe"
-                    />
-                  </template>
-                </UInput>
-              </UFormField>
-            </form>
-          </template>
-        </UFooterColumns>
+        <UFooterColumns :columns="columns" />
       </UContainer>
     </template>
 
     <template #left>
       <p class="text-muted text-sm">
-        Cosmo &copy; {{ new Date().getFullYear() }}
+        {{ SITE.name }} &copy; {{ new Date().getFullYear() }}
       </p>
     </template>
 
@@ -103,10 +63,11 @@ function onSubmit() {
         to="/docs"
       />
       <UButton
-        icon="i-lucide-message-circle"
-        aria-label="Support"
+        icon="i-lucide-life-buoy"
+        aria-label="Help"
         color="neutral"
         variant="ghost"
+        to="/help"
       />
     </template>
   </UFooter>

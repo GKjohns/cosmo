@@ -1,11 +1,50 @@
 <script setup lang="ts">
 const { data: page } = await useAsyncData('index', () => queryCollection('index').first())
 
-const title = page.value?.seo?.title || page.value?.title
-const description = page.value?.seo?.description || page.value?.description
+const title = page.value?.seo?.title || page.value?.title || SITE.name
+const description = page.value?.seo?.description || page.value?.description || SITE.description
+
+// The app-wide template would render "Cosmo · Cosmo" here; disable it so the
+// tab reads plain "Cosmo". The JSON-LD is the landing page's only structured
+// data; no `offers`, and nothing here claims ratings or reviews we don't have.
+useHead({
+  titleTemplate: null,
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'Organization',
+            '@id': `${SITE.url}/#org`,
+            'name': 'Monument Labs LLC',
+            'url': 'https://monumentlabs.io'
+          },
+          {
+            '@type': 'WebSite',
+            '@id': `${SITE.url}/#website`,
+            'name': SITE.name,
+            'url': SITE.url,
+            'publisher': { '@id': `${SITE.url}/#org` }
+          },
+          {
+            '@type': 'SoftwareApplication',
+            'name': SITE.name,
+            'url': SITE.url,
+            'applicationCategory': 'BusinessApplication',
+            'operatingSystem': 'Web',
+            'image': `${SITE.url}/og-image.png`,
+            'publisher': { '@id': `${SITE.url}/#org` },
+            description
+          }
+        ]
+      })
+    }
+  ]
+})
 
 useSeoMeta({
-  titleTemplate: '',
   title,
   ogTitle: title,
   description,

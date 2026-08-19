@@ -1,4 +1,5 @@
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { isDemoMode } from '../../../utils/runtimeKeys'
 
 /**
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
 
   const supabase = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
-  const admin = serverSupabaseAdmin()
+  const admin: SupabaseClient = serverSupabaseServiceRole(event)
   const callerMembership = await requireActiveOrg(event, admin, userId)
 
   if (callerMembership.role !== 'admin') {

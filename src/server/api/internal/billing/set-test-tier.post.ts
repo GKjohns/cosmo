@@ -7,12 +7,11 @@
  *
  * Body: { tier: 'free' | 'pro' | 'alpha' | null }
  */
-import { serverSupabaseClient } from '#supabase/server'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { requireEmployee } from '../../../utils/requireEmployee'
+import { isDemoMode } from '../../../utils/runtimeKeys'
 
 export default defineEventHandler(async (event) => {
-  const supabase = await serverSupabaseClient(event)
-  const userId = await requireEmployee(event, supabase)
+  const { userId, supabase } = await requireEmployee(event)
 
   const body = await readBody<{ tier: string | null }>(event)
   const tier = body?.tier ?? null
@@ -20,7 +19,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid tier.' })
   }
 
-  const { error } = await (supabase as SupabaseClient)
+  // Demo mode: no profiles table to write; the billing page reads the tier
+  // from the fixture, so acknowledge and move on.
+  if (isDemoMode(event) || !supabase) return { success: true, tier }
+
+  const { error } = await supabase
     .from('profiles')
     .update({ test_tier: tier })
     .eq('id', userId)

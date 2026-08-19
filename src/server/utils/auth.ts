@@ -5,12 +5,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { DEMO_MEMBERSHIP_ID, DEMO_ORG_ID, DEMO_USER_ID, isDemoMode } from './runtimeKeys'
 
 /**
- * Resolve the current authenticated user ID.
+ * Resolve the current authenticated user id.
  *
- * Order of precedence:
- * - Demo mode (no Supabase configured) → fixture demo user.
- * - Authorization: Bearer <supabase_access_token> (explicit client auth)
- * - Cookie-based auth via Nuxt Supabase module (serverSupabaseUser)
+ * Precedence:
+ * - `Authorization: Bearer <supabase_access_token>` (explicit client auth)
+ * - cookie-based auth via @nuxtjs/supabase (serverSupabaseUser)
  *
  * Returns null when no authenticated user can be resolved.
  */
@@ -18,11 +17,9 @@ export async function resolveUserId(
   event: H3Event,
   supabase: SupabaseClient
 ): Promise<string | null> {
-  if (isDemoMode(event)) {
-    return DEMO_USER_ID
-  }
+  // DEMO MODE (no Supabase configured): every visitor is the fixture user.
+  if (isDemoMode(event)) return DEMO_USER_ID
 
-  // Prefer bearer token explicitly provided by the client.
   const authHeader = getHeader(event, 'authorization') || getHeader(event, 'Authorization')
   const bearerPrefix = 'Bearer '
   const token = authHeader?.startsWith(bearerPrefix)
@@ -31,7 +28,6 @@ export async function resolveUserId(
 
   if (token) {
     const { data: userResult, error: userError } = await supabase.auth.getUser(token)
-
     if (userError) {
       console.error('Supabase auth.getUser error:', userError)
     } else {
@@ -39,26 +35,29 @@ export async function resolveUserId(
     }
   }
 
-  // Fall back to cookie-based auth.
-  const authUser = await serverSupabaseUser(event)
+  const authUser = await resolveCookieUser(event)
+  // Sub-first on the SERVER: the cookie path hands back a JWT claims object,
+  // whose identifier is `sub`. The CLIENT helper (app/utils/userId.ts) is
+  // id-first because it sees session user objects. Do not "align" them.
   return (authUser as { sub?: string } | null)?.sub || authUser?.id || null
 }
 
 /**
- * Resolve the current authenticated user ID, returning null on miss.
- * Convenience wrapper for routes that allow anonymous traffic but want to
- * attribute the row when a session happens to be present (e.g. analytics
- * ingest, public read endpoints with optional personalization).
+ * serverSupabaseUser, but null instead of a throw when the session cookie is
+ * present but expired/invalid (AuthSessionMissingError). No cookie at all
+ * already resolves cleanly to null; only a stale one throws.
  */
-export async function getOptionalUser(
-  event: H3Event,
-  supabase: SupabaseClient
-): Promise<string | null> {
-  return resolveUserId(event, supabase)
+async function resolveCookieUser(event: H3Event) {
+  try {
+    return await serverSupabaseUser(event)
+  } catch (error) {
+    console.error('Supabase serverSupabaseUser error:', error)
+    return null
+  }
 }
 
 /**
- * Resolve the current authenticated user ID, throwing a 401 if missing.
+ * Resolve the current authenticated user id, throwing a 401 if missing.
  */
 export async function requireUserId(
   event: H3Event,
@@ -73,6 +72,19 @@ export async function requireUserId(
     })
   }
   return userId
+}
+
+/**
+ * Resolve the current authenticated user ID, returning null on miss.
+ * Convenience wrapper for routes that allow anonymous traffic but want to
+ * attribute the row when a session happens to be present (e.g. analytics
+ * ingest, public read endpoints with optional personalization).
+ */
+export async function getOptionalUser(
+  event: H3Event,
+  supabase: SupabaseClient
+): Promise<string | null> {
+  return resolveUserId(event, supabase)
 }
 
 export type OrgMembership = {
@@ -114,49 +126,6 @@ export async function requireOrgMember(
     organizationId: data.organization_id,
     role: data.role as 'admin' | 'member'
   }
-}
-
-/**
- * Verify the calling user is an employee (`profiles.is_employee = true`).
- *
- * Used to guard `/api/admin/*` and `/api/internal/*` routes. Re-queries
- * `profiles.is_employee` against the supplied client (so RLS still applies
- * to anything the caller does after) — never trusts a client-provided flag.
- *
- * Throws 401 if there is no signed-in user, 403 if signed in but not an
- * employee. (The page-level `employee.ts` middleware already 404s the
- * Vue routes; the API surface uses 403 because clients consume it directly.)
- */
-export async function requireEmployee(
-  event: H3Event,
-  supabase: SupabaseClient
-): Promise<string> {
-  if (isDemoMode(event)) {
-    // Demo fixture user is treated as an employee so dev-tools + admin
-    // surfaces remain reachable without a real profiles row.
-    return DEMO_USER_ID
-  }
-
-  const userId = await requireUserId(event, supabase)
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('is_employee')
-    .eq('id', userId)
-    .maybeSingle()
-
-  if (error) {
-    throw createError({ statusCode: 500, statusMessage: error.message })
-  }
-
-  if (!data?.is_employee) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Employees only.'
-    })
-  }
-
-  return userId
 }
 
 /**

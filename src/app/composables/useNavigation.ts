@@ -84,16 +84,16 @@ export function useNavigation() {
           label: 'Internal'
         } as NavigationMenuItem,
         {
-          label: 'Admin',
+          label: 'Overview',
           icon: 'i-lucide-shield',
-          to: '/app/admin',
-          active: route.path.startsWith('/app/admin')
+          to: '/internal',
+          active: route.path === '/internal'
         },
         {
           label: 'Dev Tools',
           icon: 'i-lucide-wrench',
-          to: '/app/dev-tools',
-          active: route.path.startsWith('/app/dev-tools')
+          to: '/internal/dev-tools',
+          active: route.path.startsWith('/internal/dev-tools')
         }
       )
     }
@@ -109,7 +109,7 @@ export function useNavigation() {
         items: [
           ...mainNav.value
             // Skip internal-only routes — they live in their own group below.
-            .filter(item => item.type !== 'label' && item.to && !String(item.to).match(/^\/app\/(admin|dev-tools)/))
+            .filter(item => item.type !== 'label' && item.to && !String(item.to).startsWith('/internal'))
             .map(item => ({
               id: String(item.to),
               label: item.label || 'Untitled',
@@ -144,16 +144,16 @@ export function useNavigation() {
         label: 'Internal',
         items: [
           {
-            id: '/app/admin',
-            label: 'Admin',
+            id: '/internal',
+            label: 'Overview',
             icon: 'i-lucide-shield',
-            to: '/app/admin'
+            to: '/internal'
           },
           {
-            id: '/app/dev-tools',
+            id: '/internal/dev-tools',
             label: 'Dev Tools',
             icon: 'i-lucide-wrench',
-            to: '/app/dev-tools'
+            to: '/internal/dev-tools'
           }
         ]
       })

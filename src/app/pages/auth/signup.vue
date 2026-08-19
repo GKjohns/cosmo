@@ -24,9 +24,8 @@ const formError = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 const showEmailForm = ref(false)
 const initialEmail = ref('')
-// TODO(sprint 3): file is replaced verbatim by Camera Shy's login/signup.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const emailInputRef = ref<any | null>(null)
+// UInput exposes its native `<input>` as `inputRef` (Nuxt UI 4).
+const emailInputRef = ref<{ inputRef?: HTMLInputElement | null } | null>(null)
 
 // Demo mode short-circuit: no Supabase, no signup — just walk to /app.
 if (isDemo.value && import.meta.client) {
@@ -38,19 +37,11 @@ async function expandEmailForm() {
   state.email = initialEmail.value
 
   await nextTick()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO(sprint 3)
-  const component = emailInputRef.value as any
-  const el
-    = component?.$el?.querySelector?.('input')
-      || component?.$el
-      || component
-
-  if (el && typeof el.focus === 'function') {
+  const el = emailInputRef.value?.inputRef
+  if (el) {
     el.focus()
-    if (typeof el.setSelectionRange === 'function') {
-      const length = el.value?.length ?? 0
-      el.setSelectionRange(length, length)
-    }
+    const length = el.value.length
+    el.setSelectionRange(length, length)
   }
 }
 

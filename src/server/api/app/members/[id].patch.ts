@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const schema = z.object({
   role: z.enum(['admin', 'member'])
@@ -18,7 +19,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Membership ID is required.' })
   }
 
-  const admin = serverSupabaseAdmin()
+  const admin: SupabaseClient = serverSupabaseServiceRole(event)
   const callerMembership = await requireActiveOrg(event, admin, userId)
 
   if (callerMembership.role !== 'admin') {

@@ -32,8 +32,9 @@ export function useAnalytics() {
       ctx.userAgent = window.navigator.userAgent
     }
 
-    if (user.value?.id) {
-      ctx.userId = user.value.id
+    const userId = userIdFromSupabaseUser(user.value)
+    if (userId) {
+      ctx.userId = userId
     }
 
     return ctx

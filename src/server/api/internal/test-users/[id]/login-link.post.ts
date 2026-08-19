@@ -1,5 +1,5 @@
-import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
-import { requireEmployee } from '../../../../utils/auth'
+import { internalNotFound, requireEmployee } from '../../../../utils/requireEmployee'
+import { isDemoMode } from '../../../../utils/runtimeKeys'
 
 /**
  * Generate a magic-link URL that signs in as a test user. Employee-only.
@@ -9,18 +9,17 @@ import { requireEmployee } from '../../../../utils/auth'
  * so we fetch the email from `auth.admin.getUserById`.
  */
 export default defineEventHandler(async (event): Promise<{ magicLink: string }> => {
-  const supabase = await serverSupabaseClient(event)
-  await requireEmployee(event, supabase)
+  const { supabase: serviceClient } = await requireEmployee(event)
+
+  // Demo mode: no test users exist.
+  if (isDemoMode(event) || !serviceClient) throw internalNotFound()
 
   const testUserId = getRouterParam(event, 'id')
   if (!testUserId) {
     throw createError({ statusCode: 400, statusMessage: 'Test user ID required' })
   }
 
-  const serviceClient = serverSupabaseServiceRole(event)
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: testUserProfile, error: testUserError } = await (serviceClient as any)
+  const { data: testUserProfile, error: testUserError } = await serviceClient
     .from('profiles')
     .select('is_test_user')
     .eq('id', testUserId)

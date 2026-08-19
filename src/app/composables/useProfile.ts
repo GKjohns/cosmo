@@ -29,22 +29,22 @@ interface ProfileResponse {
   needsOnboarding: boolean
 }
 
-/**
- * `useSupabaseUser()` is typed as a Supabase `User` but @nuxtjs/supabase 2.x
- * may hand back raw JWT claims (`sub`, no `id`) — read both.
- */
+/** OAuth metadata is the only field read off the raw user beyond the id. */
 interface UserClaims {
-  id?: string
-  sub?: string
   user_metadata?: Record<string, string | undefined>
 }
 
 export function useProfile() {
   const user = useSupabaseUser()
   const isDemo = useDemoMode()
+  // Captured here (in a Nuxt context) rather than at call time: `fetchProfile`
+  // also runs from watchers. `useRequestFetch` forwards the incoming cookies
+  // during SSR; a bare `$fetch` would arrive at /api/app/profile
+  // unauthenticated and always answer 401.
+  const requestFetch = useRequestFetch()
   const getUserId = () => {
     if (isDemo.value) return 'demo-user'
-    return (user.value as UserClaims | null)?.id || (user.value as UserClaims | null)?.sub
+    return userIdFromSupabaseUser(user.value)
   }
 
   const profile = useState<Profile | null>('user-profile', () => null)
@@ -52,12 +52,13 @@ export function useProfile() {
   const isFetched = useState<boolean>('user-profile-fetched', () => false)
   const needsOnboarding = useState<boolean>('needs-onboarding', () => false)
 
+  /** Never throws — a network blip inside route middleware must not blank the app. */
   async function fetchProfile(): Promise<Profile | null> {
     if (!getUserId()) return null
 
     isLoading.value = true
     try {
-      const response = await $fetch<ProfileResponse>('/api/app/profile')
+      const response = await requestFetch<ProfileResponse>('/api/app/profile')
       profile.value = response.profile
       needsOnboarding.value = response.needsOnboarding
       isFetched.value = true
@@ -99,13 +100,17 @@ export function useProfile() {
   }
 
   // Auto-fetch when the auth user appears, or immediately in demo mode.
+  // Client-only: on the server the `internal` middleware (and anything else
+  // that needs the answer before render) awaits `fetchProfile()` explicitly,
+  // and the result rides the payload — a fire-and-forget SSR fetch here would
+  // just race it.
   if (isDemo.value && !isFetched.value && import.meta.client) {
     void fetchProfile()
   }
 
   watch(user, async (newUser) => {
-    if (isDemo.value) return
-    const userId = (newUser as UserClaims | null)?.id || (newUser as UserClaims | null)?.sub
+    if (isDemo.value || import.meta.server) return
+    const userId = userIdFromSupabaseUser(newUser)
     if (userId) {
       if (!isFetched.value) {
         await fetchProfile()

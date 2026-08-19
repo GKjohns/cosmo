@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Employee-only dev tools. Lifted from Margin's `pages/app/dev-tools.vue`,
+ * Employee-only dev tools (`/internal/dev-tools`). Lifted from Margin's dev-tools page,
  * trimmed for cosmo:
  *   - drops the kernel WebSocket probe (Margin-specific)
  *   - drops the OG image preview modal (Margin-specific brand chrome)
@@ -11,7 +11,7 @@ import type { TabsItem, TableColumn, TableRow } from '@nuxt/ui'
 
 definePageMeta({
   layout: 'dashboard',
-  middleware: 'employee'
+  middleware: 'internal'
 })
 
 useSeoMeta({ title: 'Dev Tools' })
@@ -40,7 +40,7 @@ type CheckStatus = 'idle' | 'checking' | 'ok' | 'error'
 // === API health check ===
 const apiStatus = ref<CheckStatus>('idle')
 const apiLatency = ref<number | null>(null)
-const apiResponse = ref<{ ok: boolean, ts: string, serverTime?: string } | null>(null)
+const apiResponse = ref<{ ok: boolean, ts: string, demoMode: boolean } | null>(null)
 const apiError = ref<string | null>(null)
 
 async function checkApi() {
@@ -51,7 +51,7 @@ async function checkApi() {
 
   const start = performance.now()
   try {
-    const response = await $fetch<{ ok: boolean, ts: string, serverTime?: string }>('/api/health')
+    const response = await $fetch<{ ok: boolean, ts: string, demoMode: boolean }>('/api/health')
     apiLatency.value = Math.round(performance.now() - start)
     apiResponse.value = response
     apiStatus.value = 'ok'
@@ -172,10 +172,7 @@ function emailLabel(status: string): string {
 }
 
 // === Env / browser inspector ===
-const userId = computed(() => {
-  const claims = user.value as { id?: string, sub?: string } | null
-  return claims?.id || claims?.sub
-})
+const userId = computed(() => userIdFromSupabaseUser(user.value))
 
 const envInfo = computed(() => [
   { label: 'Mode', value: import.meta.dev ? 'Development' : 'Production' },
@@ -603,7 +600,7 @@ function getStatusClasses(status: CheckStatus) {
                           </UBadge>
                           <span class="text-muted">{{ apiLatency }}ms</span>
                           <span class="text-muted">•</span>
-                          <span class="text-muted">{{ apiResponse.serverTime || apiResponse.ts }}</span>
+                          <span class="text-muted">{{ apiResponse.ts }}{{ apiResponse.demoMode ? " (demo mode)" : "" }}</span>
                         </div>
                       </template>
                       <template v-else-if="apiStatus === 'error'">

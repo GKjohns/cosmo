@@ -31,11 +31,11 @@ import {
   toUIMessageStream
 } from 'ai'
 import { z } from 'zod'
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ChatBackend } from '../../utils/chats'
 import { generateChatTitle, normalizeMessages, persistChatMessages, persistChatTitle } from '../../utils/chats'
 import { createAITools } from '../../utils/ai-tools'
-import { serverSupabaseAdmin } from '../../utils/supabase'
 import { isAIConfigured, isDemoMode } from '../../utils/runtimeKeys'
 import { getDemoChat } from '../../utils/demoStore'
 import { isRegisteredModel } from '../../utils/aiModels'
@@ -129,7 +129,7 @@ export default defineEventHandler(async (event) => {
     try {
       const membership = await requireActiveOrg(event, backend.supabase, userId)
       tools = createAITools({
-        supabase: serverSupabaseAdmin(),
+        supabase: serverSupabaseServiceRole(event) as SupabaseClient,
         organizationId: membership.organizationId
       })
     } catch {

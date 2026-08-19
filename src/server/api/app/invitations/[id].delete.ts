@@ -1,4 +1,5 @@
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Revoke a pending invitation in the caller's active org. Admin-only.
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invitation ID is required.' })
   }
 
-  const admin = serverSupabaseAdmin()
+  const admin: SupabaseClient = serverSupabaseServiceRole(event)
   const callerMembership = await requireActiveOrg(event, admin, userId)
 
   if (callerMembership.role !== 'admin') {

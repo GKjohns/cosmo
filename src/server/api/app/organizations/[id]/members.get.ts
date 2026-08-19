@@ -1,4 +1,5 @@
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * List members of an org the caller belongs to.
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Organization ID is required.' })
   }
 
-  const admin = serverSupabaseAdmin()
+  const admin: SupabaseClient = serverSupabaseServiceRole(event)
   const membership = await requireOrgMember(event, admin, orgId, userId)
 
   const { data, error } = await admin

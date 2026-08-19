@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseUser, serverSupabaseServiceRole } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const schema = z.object({
   // ARIA defaulted to UUIDs; we keep the schema permissive so projects that
@@ -18,7 +19,7 @@ export default defineEventHandler(async (event) => {
   const callerEmail = authUser?.email ?? null
 
   const body = await readValidatedBody(event, schema.parse)
-  const admin = serverSupabaseAdmin()
+  const admin: SupabaseClient = serverSupabaseServiceRole(event)
 
   const { data: invitation, error: fetchError } = await admin
     .from('invitations')

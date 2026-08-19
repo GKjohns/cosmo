@@ -1,0 +1,11 @@
+# /app is the product behind login; /auth/confirm consumes single-use magic
+# links (its ?code= values must never land in an index). /internal is
+# deliberately NOT listed — a Disallow line would advertise the path; its
+# pages 404 to outsiders and carry X-Robots-Tag: noindex instead.
+User-agent: *
+Disallow: /api/
+Disallow: /app/
+Disallow: /app$
+Disallow: /auth/confirm
+
+Sitemap: https://cosmo.example.com/sitemap.xml

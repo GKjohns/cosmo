@@ -1,5 +1,5 @@
-import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
-import { requireEmployee } from '../../../utils/auth'
+import { requireEmployee } from '../../../utils/requireEmployee'
+import { isDemoMode } from '../../../utils/runtimeKeys'
 
 interface TestUser {
   id: string
@@ -17,13 +17,12 @@ interface TestUser {
  * no `email` column.
  */
 export default defineEventHandler(async (event): Promise<TestUser[]> => {
-  const supabase = await serverSupabaseClient(event)
-  await requireEmployee(event, supabase)
+  const { supabase: serviceClient } = await requireEmployee(event)
 
-  const serviceClient = serverSupabaseServiceRole(event)
+  // Demo mode: no auth.users to list.
+  if (isDemoMode(event) || !serviceClient) return []
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: testUsers, error } = await (serviceClient as any)
+  const { data: testUsers, error } = await serviceClient
     .from('profiles')
     .select('id, display_name, created_at')
     .eq('is_test_user', true)
@@ -41,8 +40,7 @@ export default defineEventHandler(async (event): Promise<TestUser[]> => {
   const userIds = testUsers.map((u: { id: string }) => u.id)
 
   const [itemsResult, authUsersResult] = await Promise.all([
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (serviceClient as any)
+    serviceClient
       .from('items')
       .select('created_by')
       .in('created_by', userIds),
