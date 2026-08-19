@@ -5,8 +5,6 @@ import type { Period, Range } from '~/types'
 
 definePageMeta({ layout: 'dashboard' })
 
-useDashboard()
-
 const items = [[{
   label: 'New chat',
   icon: 'i-lucide-message-circle',

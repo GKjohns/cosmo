@@ -24,7 +24,7 @@ import {
   DEMO_USER_NAME
 } from './runtimeKeys'
 import type { Chat, ChatSummary } from './chats'
-import { normalizeMessages, serializeMessages } from './chats'
+import { mergeMessagesById, normalizeMessages, serializeMessages } from './chats'
 
 export interface DemoProfile {
   id: string
@@ -108,7 +108,7 @@ const chatStore = new Map<string, StoredChat>()
 export function listDemoChats(): ChatSummary[] {
   return Array.from(chatStore.values())
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-    .map(c => ({ id: c.id, title: c.title, updatedAt: c.updatedAt }))
+    .map(c => ({ id: c.id, title: c.title, createdAt: c.createdAt, updatedAt: c.updatedAt }))
 }
 
 export function getDemoChat(id: string): Chat | null {
@@ -141,14 +141,8 @@ export function createDemoChat(id: string, firstUserMessage: UIMessage): { id: s
 
 export function appendDemoChatMessages(id: string, newMessages: UIMessage[]): void {
   const chat = chatStore.get(id)
-  if (!chat) return
-  const existingIds = new Set(chat.messages.map(m => m.id))
-  const filtered = newMessages.filter(m => !existingIds.has(m.id))
-  if (filtered.length === 0) return
-  chat.messages = normalizeMessages([
-    ...serializeMessages(chat.messages),
-    ...serializeMessages(filtered)
-  ])
+  if (!chat || newMessages.length === 0) return
+  chat.messages = normalizeMessages(serializeMessages(mergeMessagesById(chat.messages, newMessages)))
   chat.updatedAt = new Date().toISOString()
 }
 
@@ -161,4 +155,20 @@ export function setDemoChatTitle(id: string, title: string): void {
 
 export function deleteDemoChat(id: string): boolean {
   return chatStore.delete(id)
+}
+
+/**
+ * Truncate the stored history at `messageId` (Sprint 5 edit/regenerate).
+ * `edit` keeps the target user message (the client resends it with the new
+ * text and the same id); `regenerate` drops the target assistant message.
+ * Returns false when the chat or message is missing.
+ */
+export function truncateDemoChatMessages(id: string, messageId: string, type: 'edit' | 'regenerate'): boolean {
+  const chat = chatStore.get(id)
+  if (!chat) return false
+  const index = chat.messages.findIndex(m => m.id === messageId)
+  if (index === -1) return false
+  chat.messages = chat.messages.slice(0, type === 'edit' ? index + 1 : index)
+  chat.updatedAt = new Date().toISOString()
+  return true
 }

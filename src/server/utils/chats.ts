@@ -43,6 +43,7 @@ export interface Chat {
 export interface ChatSummary {
   id: string
   title: string
+  createdAt: string
   updatedAt: string
 }
 
@@ -143,10 +144,24 @@ export async function persistChatTitle(backend: ChatBackend, id: string, title: 
 }
 
 /**
- * Append the messages the stream produced that aren't already stored
- * (id-diff against the latest row, not the request snapshot).
+ * Merge the stream's messages into the stored history by id (against the
+ * latest row, not the request snapshot): existing ids take the response's
+ * version (an edited user message keeps its id — Sprint 5 edit flow), new
+ * ids are appended. Never a blind overwrite: the SDK can re-emit existing
+ * parts and that would duplicate them.
  */
+export function mergeMessagesById(stored: UIMessage[], responseMessages: UIMessage[]): UIMessage[] {
+  const byId = new Map(responseMessages.map(m => [m.id, m]))
+  const existingIds = new Set(stored.map(m => m.id))
+  return [
+    ...stored.map(m => byId.get(m.id) ?? m),
+    ...responseMessages.filter(m => !existingIds.has(m.id))
+  ]
+}
+
 export async function persistChatMessages(backend: ChatBackend, id: string, responseMessages: UIMessage[]): Promise<void> {
+  if (responseMessages.length === 0) return
+
   if (backend.demo) {
     if (getDemoChat(id)) appendDemoChatMessages(id, responseMessages)
     return
@@ -160,14 +175,11 @@ export async function persistChatMessages(backend: ChatBackend, id: string, resp
   if (!latest) return
 
   const stored = normalizeMessages(latest.messages)
-  const existingIds = new Set(stored.map(m => m.id))
-  const newMessages = responseMessages.filter(m => !existingIds.has(m.id))
-  if (newMessages.length === 0) return
 
   const { error } = await backend.supabase
     .from('chats')
     .update({
-      messages: serializeMessages([...stored, ...newMessages]),
+      messages: serializeMessages(mergeMessagesById(stored, responseMessages)),
       updated_at: new Date().toISOString()
     })
     .eq('id', id)

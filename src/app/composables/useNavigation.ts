@@ -3,7 +3,22 @@ import type { CommandPaletteGroup, NavigationMenuItem } from '@nuxt/ui'
 interface ChatNavItem {
   id: string
   title: string
+  createdAt: string
   updatedAt: string
+}
+
+/** Chat rows shaped for `UNavigationMenu` children and `UDashboardSearch` groups. */
+export interface ChatNavLink extends NavigationMenuItem {
+  id: string
+  label: string
+  to: string
+  createdAt: string
+}
+
+/** Sidebar chat rows carry this `ui` so the ⋯ trailing menu slides in on hover. */
+const CHAT_LINK_UI = {
+  link: 'overflow-hidden pr-7.5',
+  linkTrailing: 'translate-x-full group-hover:translate-x-0 group-has-data-[state=open]:translate-x-0 transition-transform ms-0 absolute inset-e-px'
 }
 
 /**
@@ -14,31 +29,64 @@ interface ChatNavItem {
  * a one-file change. Projects extend by adding entries here; per-page navs
  * (e.g. settings tabs) live in their own pages.
  *
- * The `chats` nav children are dynamic (Sprint 6): they refresh whenever
- * a chat is created (`refreshNuxtData('chats')`) so the sidebar stays in
- * sync with the live chat list.
+ * The `chats` nav children are dynamic: they refresh whenever a chat is
+ * created (`refreshNuxtData('chats')`) and `useChatActions` edits the
+ * `useNuxtData('chats')` cache in place on rename/delete. Rows are bucketed
+ * by date (`useChats`, from the Nuxt UI chat template) into `type: 'label'`
+ * headers under "AI" and into ⌘K palette groups; each row uses the `chat`
+ * slot so `layouts/dashboard.vue` can render the ⋯ actions menu.
  */
 export function useNavigation() {
   const route = useRoute()
   const { isEmployee } = useProfile()
 
-  // Recent chats — only fetched when authed; useFetch picks up the cookie.
-  // The `key: 'chats'` lets the empty-state page call
-  // `refreshNuxtData('chats')` after creating a new chat.
+  // Chats — fetched on the server too so the grouped sidebar SSRs (useFetch
+  // forwards the auth cookie); `lazy` so it never blocks navigation. The
+  // `key: 'chats'` lets pages call `refreshNuxtData('chats')` and lets
+  // `useChatActions` edit the cache in place.
   const { data: chats } = useFetch<ChatNavItem[]>('/api/chats', {
     key: 'chats',
     default: () => [],
-    server: false,
     lazy: true
   })
 
-  const recentChatChildren = computed<NavigationMenuItem[]>(() => {
-    return (chats.value ?? []).slice(0, 8).map(c => ({
-      label: c.title?.trim() || 'New chat',
-      icon: 'i-lucide-message-circle',
-      to: `/app/chat/${c.id}`,
-      active: route.path === `/app/chat/${c.id}`
-    }))
+  const chatLinks = computed<ChatNavLink[]>(() => (chats.value ?? []).map(c => ({
+    id: c.id,
+    label: c.title?.trim() || 'Untitled',
+    to: `/app/chat/${c.id}`,
+    icon: 'i-lucide-message-circle',
+    createdAt: c.createdAt
+  })))
+
+  const { groups: chatGroups } = useChats(chatLinks)
+
+  const chatChildren = computed<NavigationMenuItem[]>(() => {
+    const items: NavigationMenuItem[] = [{
+      label: 'New chat',
+      icon: 'i-lucide-circle-plus',
+      to: '/app/chat',
+      kbds: ['meta', 'o'],
+      // Own slot so the layout can render the ⌘O kbds without overriding
+      // the default `item-trailing` (the AI accordion chevron lives there).
+      slot: 'new-chat',
+      active: route.path === '/app/chat'
+    }]
+
+    for (const group of chatGroups.value) {
+      items.push({ type: 'label', label: group.label })
+      for (const chat of group.items) {
+        items.push({
+          ...chat,
+          icon: undefined,
+          slot: 'chat',
+          class: chat.label === 'Untitled' ? 'text-muted' : '',
+          ui: CHAT_LINK_UI,
+          active: route.path === chat.to
+        })
+      }
+    }
+
+    return items
   })
 
   const mainNav = computed<NavigationMenuItem[]>(() => {
@@ -55,7 +103,7 @@ export function useNavigation() {
         to: '/app/chat',
         active: route.path.startsWith('/app/chat'),
         defaultOpen: route.path.startsWith('/app/chat'),
-        children: recentChatChildren.value.length > 0 ? recentChatChildren.value : undefined
+        children: chatChildren.value
       },
       {
         label: 'Editor',
@@ -113,6 +161,13 @@ export function useNavigation() {
         id: 'navigation',
         label: 'Navigate',
         items: [
+          {
+            id: '/app/chat/new',
+            label: 'New chat',
+            icon: 'i-lucide-circle-plus',
+            to: '/app/chat',
+            kbds: ['meta', 'o']
+          },
           ...mainNav.value
             // Skip internal-only routes — they live in their own group below.
             .filter(item => item.type !== 'label' && item.to && !String(item.to).startsWith('/internal'))
@@ -143,6 +198,20 @@ export function useNavigation() {
         ]
       }
     ]
+
+    // Chats, bucketed by date (Today / Yesterday / ...), searchable by title.
+    for (const group of chatGroups.value) {
+      groups.push({
+        id: `chats-${group.id}`,
+        label: group.label,
+        items: group.items.map(chat => ({
+          id: chat.id,
+          label: chat.label,
+          icon: 'i-lucide-message-circle',
+          to: chat.to
+        }))
+      })
+    }
 
     if (isEmployee.value) {
       groups.push({

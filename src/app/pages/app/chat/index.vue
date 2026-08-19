@@ -58,6 +58,7 @@ async function createChat(prompt: string) {
         message: {
           id: crypto.randomUUID(),
           role: 'user',
+          metadata: { createdAt: new Date().toISOString() },
           parts: [{ type: 'text', text: trimmed }]
         }
       }

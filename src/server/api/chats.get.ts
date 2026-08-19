@@ -1,8 +1,8 @@
 /**
  * GET /api/chats
  *
- * Lists the caller's chats (id, title, updated_at) for the sidebar +
- * the empty-state suggestion list. Sprint 6.
+ * Lists the caller's chats (id, title, created_at, updated_at) for the
+ * sidebar (date-bucketed by `createdAt` in `useChats`) + the ⌘K palette.
  *
  * Owner-only. Uses the request-scoped Supabase client so RLS scopes the
  * result set to the authenticated user.
@@ -14,12 +14,13 @@ import { listDemoChats } from '../utils/demoStore'
 export interface ChatListItem {
   id: string
   title: string
+  createdAt: string
   updatedAt: string
 }
 
 export default defineEventHandler(async (event): Promise<ChatListItem[]> => {
   if (isDemoMode(event)) {
-    return listDemoChats().map(c => ({ id: c.id, title: c.title, updatedAt: c.updatedAt }))
+    return listDemoChats()
   }
 
   const supabase = await serverSupabaseClient(event)
@@ -28,7 +29,7 @@ export default defineEventHandler(async (event): Promise<ChatListItem[]> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('chats')
-    .select('id, title, updated_at')
+    .select('id, title, created_at, updated_at')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })
     .limit(50)
@@ -38,9 +39,10 @@ export default defineEventHandler(async (event): Promise<ChatListItem[]> => {
     throw createError({ statusCode: 500, statusMessage: 'Failed to fetch chats.' })
   }
 
-  return (data ?? []).map((row: { id: string, title: string | null, updated_at: string }) => ({
+  return (data ?? []).map((row: { id: string, title: string | null, created_at: string, updated_at: string }) => ({
     id: row.id,
     title: row.title ?? '',
+    createdAt: row.created_at,
     updatedAt: row.updated_at
   }))
 })

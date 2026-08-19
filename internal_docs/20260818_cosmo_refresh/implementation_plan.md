@@ -223,7 +223,7 @@ cosmo/
 
 ---
 
-### Sprint 5: Chat feature parity with the Nuxt UI chat template [Not Started]
+### Sprint 5: Chat feature parity with the Nuxt UI chat template [Complete]
 **Goal:** Cosmo's chat surface matches `nuxt-ui-templates/chat` (Aug 2026) on the parts that need no new backend service or second source of truth: date-grouped sidebar with rename/delete, ⌘O / ⌘K shortcuts, per-message copy/regenerate and user-message edit.
 **Estimated effort:** 3 hours
 
@@ -232,11 +232,17 @@ cosmo/
 - 5.2 **Message actions.** Copy `tpl_chat/app/components/chat/message/{MessageActions,MessageEdit}.vue` → cosmo `chat/`; `UChatMessages #actions` slot: assistant = copy + regenerate, user = timestamp + edit; edit flow = `DELETE /api/chats/:id/messages { messageId, type: 'edit' | 'regenerate' }` (new `src/server/api/chats/[id]/messages.delete.ts`: truncate the jsonb `messages` array at `messageId` — inclusive for `edit`, exclusive for `regenerate` — with the demo-store branch), then `sendMessage({ text, messageId })` / `regenerate({ messageId })` (ai@7 signatures). **Skip** votes (needs a table; no shipped app has it), visibility toggle, file uploads, web-search tools — see Deferred.
 - 5.3 Optional polish if under 30 min total: `UDashboardSidebar :menu="{ inset: true }" :min-size="12"` floating-panel look — **skip by default** (cosmo's dashboard chrome is byte-identical to Camera Shy/Daylight; do not drift it).
 
+#### Deviations (2026-08-19)
+- 5.3 skipped (per plan default). Votes / visibility / uploads / model picker skipped (Deferred).
+- `persistChatMessages` changed from append-only to **merge-by-id** (`mergeMessagesById` in `server/utils/chats.ts`) so an edited user message with the same id persists; demo store uses the same helper. Live-Supabase path untested (no project).
+- Chats `useFetch` now SSRs (removed `server: false`, still `lazy`) so the grouped sidebar renders on first paint. `useDashboard()` moved from `pages/app/index.vue` to the dashboard layout so ⌘O / g-* work everywhere.
+- User-message timestamp reads `message.metadata.createdAt`, stamped client-side on send.
+
 #### Verification
-- [ ] Zero-env demo: create 3 chats; sidebar shows them under "Today" with ⋯ → Rename (modal, new title persists across reload in the in-memory store) and Delete (confirm modal, list updates without a full refetch) (screenshot `sprint5_sidebar_groups.webp`); ⌘O opens `/app/chat`; ⌘K palette lists chats.
-- [ ] With `AI_GATEWAY_API_KEY`: edit a user message → thread truncates and re-answers; regenerate on the last assistant message re-streams (screenshot `sprint5_message_actions.webp`).
-- [ ] `curl -X POST /api/chats/<id> -H 'content-type: application/json' -d '{"messages":[…],"model":"nope/nope"}'` → 400.
-- [ ] typecheck 0, lint 0, build green.
+- [x] Zero-env demo: create 3 chats; sidebar shows them under "Today" with ⋯ → Rename (modal, new title persists across reload in the in-memory store) and Delete (confirm modal, list updates without a full refetch) (screenshot `sprint5_sidebar_groups.webp`); ⌘O opens `/app/chat`; ⌘K palette lists chats.
+- [x] With `AI_GATEWAY_API_KEY` (curl-verified; screenshots `sprint5_sidebar_groups.webp`, `sprint5_rename_modal.webp`, `sprint5_message_actions.webp`): edit a user message → thread truncates and re-answers; regenerate on the last assistant message re-streams (screenshot `sprint5_message_actions.webp`).
+- [x] `curl -X POST /api/chats/<id> -H 'content-type: application/json' -d '{"messages":[…],"model":"nope/nope"}'` → 400.
+- [x] typecheck 0, lint 0, build green.
 
 ---
 

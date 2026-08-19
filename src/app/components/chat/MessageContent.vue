@@ -9,7 +9,7 @@
  * - reasoning → `UChatReasoning` (Comark inside)
  * - tools → `UChatTool` with per-tool icon/label switch
  * - text → `ChatComark` (streaming markdown + shiki) for assistant, plain
- *   text for user
+ *   text for user (or `ChatMessageEdit` while `editing`)
  *
  * TODO: project-specific tool registration. Add per-tool cases below as
  * tools are added in `server/utils/ai-tools.ts`. Future projects should
@@ -22,9 +22,17 @@ import { isPartStreaming, isToolStreaming } from '@nuxt/ui/utils/ai'
 const props = withDefaults(defineProps<{
   message: UIMessage
   collapsed?: boolean
+  /** User-message edit mode (Sprint 5): swaps the text part for `ChatMessageEdit`. */
+  editing?: boolean
 }>(), {
-  collapsed: false
+  collapsed: false,
+  editing: false
 })
+
+const emit = defineEmits<{
+  save: [message: UIMessage, text: string]
+  cancelEdit: []
+}>()
 
 type AnyToolPart = ToolUIPart | DynamicToolUIPart
 
@@ -159,12 +167,18 @@ function onToolToggle(index: number, value: boolean) {
         :value="part.text"
         :streaming="isPartStreaming(part)"
       />
-      <p
-        v-else
-        class="whitespace-pre-wrap"
-      >
-        {{ part.text }}
-      </p>
+      <template v-else-if="message.role === 'user'">
+        <ChatMessageEdit
+          v-if="editing"
+          :message="message"
+          :text="part.text"
+          @save="(msg, text) => emit('save', msg, text)"
+          @cancel="emit('cancelEdit')"
+        />
+        <p v-else class="whitespace-pre-wrap">
+          {{ part.text }}
+        </p>
+      </template>
     </template>
   </template>
 </template>

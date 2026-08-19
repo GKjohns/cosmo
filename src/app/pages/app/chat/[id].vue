@@ -6,7 +6,13 @@
  * (`messages.length === 1 && last.role === 'user'`).
  *
  * The server emits a transient `data-chat-title` part before streaming when
- * the chat had no title; `onData` refreshes the sidebar list on it.
+ * the chat had no title; `onData` refreshes the sidebar list on it. A sidebar
+ * rename edits the `chat-<id>` cache in place, so `title` also watches it.
+ *
+ * Message actions (Sprint 5, from the template): assistant copy + regenerate,
+ * user timestamp + edit. Edit / regenerate first truncate the stored history
+ * (`DELETE /api/chats/:id/messages`), then `sendMessage({ text, messageId })`
+ * / `regenerate({ messageId })` so the client and server agree on the tail.
  *
  * The same `[view-transition-name:chat-prompt]` class on the input keeps
  * the prompt locked in place during the empty-state → uuid navigation.
@@ -20,7 +26,6 @@ definePageMeta({ layout: 'dashboard' })
 
 const route = useRoute()
 const toast = useToast()
-const { copy, copied } = useClipboard()
 
 interface StoredChat {
   id: string
@@ -45,6 +50,10 @@ if (fetchError.value || !data.value) {
 }
 
 const title = ref(data.value.title?.trim() || 'New chat')
+
+watch(() => data.value?.title, (next) => {
+  if (next?.trim()) title.value = next.trim()
+})
 
 const followUpInput = ref('')
 const hasAutoStarted = ref(false)
@@ -88,15 +97,6 @@ onMounted(() => {
   void regenerate()
 })
 
-function copyMessage(_event: MouseEvent, message: UIMessage) {
-  const text = message.parts
-    .filter(p => p.type === 'text')
-    .map(p => 'text' in p ? p.text : '')
-    .join('\n\n')
-  copy(text)
-  toast.add({ title: copied.value ? 'Copied to clipboard' : 'Copied', color: 'success' })
-}
-
 function stopStreaming() {
   void stop()
 }
@@ -113,13 +113,52 @@ async function regenerateLastResponse() {
   }
 }
 
+// --- Per-message actions (edit / regenerate) --------------------------------
+
+const editingMessageId = ref<string | null>(null)
+
+function startEdit(message: UIMessage) {
+  if (editingMessageId.value || isBusy.value) return
+  editingMessageId.value = message.id
+}
+
+async function saveEdit(message: UIMessage, text: string) {
+  try {
+    await $fetch(`/api/chats/${data.value!.id}/messages`, {
+      method: 'DELETE',
+      body: { messageId: message.id, type: 'edit' }
+    })
+  } catch {
+    toast.add({ description: 'Failed to save edit.', icon: 'i-lucide-alert-circle', color: 'error' })
+    return
+  }
+
+  editingMessageId.value = null
+  void sendMessage({ text, messageId: message.id, metadata: { createdAt: new Date().toISOString() } })
+}
+
+async function regenerateMessage(message: UIMessage) {
+  if (isBusy.value) return
+  try {
+    await $fetch(`/api/chats/${data.value!.id}/messages`, {
+      method: 'DELETE',
+      body: { messageId: message.id, type: 'regenerate' }
+    })
+  } catch {
+    toast.add({ description: 'Failed to regenerate.', icon: 'i-lucide-alert-circle', color: 'error' })
+    return
+  }
+
+  void regenerate({ messageId: message.id })
+}
+
 async function handleSubmit() {
   const text = followUpInput.value.trim()
   if (!text || isBusy.value) return
 
   followUpInput.value = ''
   try {
-    await sendMessage({ text })
+    await sendMessage({ text, metadata: { createdAt: new Date().toISOString() } })
   } catch (err) {
     followUpInput.value = text
     toast.add({
@@ -166,13 +205,6 @@ async function handleSubmit() {
           should-auto-scroll
           :messages="messages"
           :status="status"
-          :assistant="{
-            actions: [{
-              label: copied ? 'Copied' : 'Copy',
-              icon: copied ? 'i-lucide-copy-check' : 'i-lucide-copy',
-              onClick: copyMessage
-            }]
-          }"
           class="pt-4 pb-4 sm:pb-6"
         >
           <template #indicator>
@@ -183,6 +215,19 @@ async function handleSubmit() {
             <ChatMessageContent
               :message="message"
               :collapsed="status === 'ready'"
+              :editing="editingMessageId === message.id"
+              @save="saveEdit"
+              @cancel-edit="editingMessageId = null"
+            />
+          </template>
+
+          <template #actions="{ message }">
+            <ChatMessageActions
+              :message="message"
+              :streaming="isBusy && message.id === messages[messages.length - 1]?.id"
+              :editing="editingMessageId === message.id"
+              @edit="startEdit"
+              @regenerate="regenerateMessage"
             />
           </template>
         </UChatMessages>
@@ -199,17 +244,7 @@ async function handleSubmit() {
           @submit="handleSubmit"
         >
           <template #footer>
-            <div class="flex items-center gap-1">
-              <UButton
-                v-if="!isBusy && messages.length > 1"
-                icon="i-lucide-refresh-cw"
-                label="Regenerate"
-                color="neutral"
-                size="sm"
-                variant="ghost"
-                @click="regenerateLastResponse"
-              />
-            </div>
+            <div class="flex items-center gap-1" />
 
             <UChatPromptSubmit
               :status="status"
