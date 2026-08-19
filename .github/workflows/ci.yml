@@ -1,0 +1,48 @@
+# CI: lint + typecheck (+ tests from Sprint 6) on every PR and push to main.
+#
+# Notes:
+# - The app lives in src/ (no root package.json), hence the working-directory
+#   default and the src/package-lock.json cache path.
+# - No secrets or env vars: cosmo boots in demo mode with none of them, and
+#   typecheck tolerates unset Supabase vars. Do NOT set a placeholder
+#   SUPABASE_URL — a malformed URL is worse than an unset one.
+# - This check is ADVISORY-ONLY: red CI signals breakage — it doesn't block
+#   merges.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: src
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck

@@ -1,33 +1,44 @@
+# The Nuxt app lives in src/. This is the only gitignore in the repo.
+
 # Nuxt dev/build outputs
-.output
-.data
-.nuxt
-.nitro
-.cache
-dist
+src/.output
+src/.data
+src/.nuxt
+src/.nitro
+src/.cache
+src/dist
+.vercel
 
 # Node dependencies
 node_modules
-
-# Logs
-logs
-*.log
-
-# Misc
-.DS_Store
-.fleet
-.idea
+src/node_modules
 
 # Local env files
 .env
 .env.*
 !.env.example
+src/.env
+src/.env.*
+!src/.env.example
 
-# VSC
-.history
-.github/workflows/
+# Logs
+logs
+*.log
 
-# Cursor — per-developer MCP / config (often contains secrets).
-# Ship the .example template only; the live file is created locally per clone.
+# Cursor — per-developer MCP / config (embeds a Supabase personal access
+# token). Ship the .example template only; the live file is created locally
+# per clone.
 .cursor/*
 !.cursor/mcp.json.example
+
+# Claude Code project-scope MCP config — same PAT concern as .cursor/mcp.json.
+.mcp.json
+
+# Playwright MCP scratch screenshots, at any depth.
+**/.playwright-mcp/
+
+# Misc
+.DS_Store
+.fleet
+.idea
+.history

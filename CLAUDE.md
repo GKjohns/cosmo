@@ -2,6 +2,8 @@
 
 Cosmo is the Monument Labs starter — Nuxt 4 + Supabase + Inngest. Clone it to bootstrap a new project; do not `nuxi init` from scratch.
 
+The Nuxt app lives in `src/`. There is no root `package.json` — every npm command runs from `src/`. Migrations live in `db_migrations/` at the root.
+
 ## Tech stack
 
 - **Framework:** Nuxt 4
