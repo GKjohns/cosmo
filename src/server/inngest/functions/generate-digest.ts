@@ -24,17 +24,19 @@ export const generateDigest = inngest.createFunction(
     concurrency: [{ limit: 1 }],
     debounce: { period: '2m' }
   },
-  async ({ event, step }: { event: any, step: any }) => {
+  async ({ event, step }) => {
     const supabase = serverSupabaseAdmin()
 
-    const organizationIds = event?.data?.organizationId
-      ? [event.data.organizationId]
+    // Cron triggers carry no payload; the on-demand event may scope to one org.
+    const requestedOrgId = (event.data as { organizationId?: string } | undefined)?.organizationId
+    const organizationIds = requestedOrgId
+      ? [requestedOrgId]
       : await step.run('list-orgs', async () => {
           const { data } = await supabase.from('organizations').select('id')
           return (data ?? []).map((o: { id: string }) => o.id)
         })
 
-    const results: any[] = []
+    const results: { organizationId: string, digest: unknown }[] = []
 
     for (const orgId of organizationIds) {
       const digest = await step.run(`digest-${orgId}`, async () => {

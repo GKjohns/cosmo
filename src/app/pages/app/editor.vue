@@ -5,7 +5,6 @@ import { TaskList, TaskItem } from '@tiptap/extension-list'
 import { TableKit } from '@tiptap/extension-table'
 import { CellSelection } from '@tiptap/pm/tables'
 import { CodeBlockShiki } from 'tiptap-extension-code-block-shiki'
-import { ImageUpload } from '~/components/editor/ImageUploadExtension'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -15,12 +14,6 @@ const { extension: Completion, handlers: aiHandlers, isLoading: aiLoading } = us
 
 // Custom handlers for editor (merged with AI handlers)
 const customHandlers = {
-  imageUpload: {
-    canExecute: (editor: Editor) => editor.can().insertContent({ type: 'imageUpload' }),
-    execute: (editor: Editor) => editor.chain().focus().insertContent({ type: 'imageUpload' }),
-    isActive: (editor: Editor) => editor.isActive('imageUpload'),
-    isDisabled: undefined
-  },
   table: {
     canExecute: (editor: Editor) => editor.can().insertTable({ rows: 3, cols: 3, withHeaderRow: true }),
     execute: (editor: Editor) => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }),
@@ -31,7 +24,7 @@ const customHandlers = {
 } satisfies EditorCustomHandlers
 
 const { items: emojiItems, extension: Emoji } = useEditorEmojis()
-const { items: mentionItems } = useEditorMentions(ref([]))
+const { items: mentionItems } = useEditorMentions()
 const { items: suggestionItems } = useEditorSuggestions(customHandlers)
 const { getItems: getDragHandleItems, onNodeChange } = useEditorDragHandle(customHandlers)
 const { toolbarItems, bubbleToolbarItems, getImageToolbarItems, getTableToolbarItems } = useEditorToolbar(customHandlers, { aiLoading })
@@ -86,7 +79,6 @@ const extensions = computed(() => [
   }),
   Completion,
   Emoji,
-  ImageUpload,
   TableKit,
   TaskList,
   TaskItem
@@ -130,7 +122,7 @@ const extensions = computed(() => [
           :items="bubbleToolbarItems"
           layout="bubble"
           :should-show="({ editor, view, state }: any) => {
-            if (editor.isActive('imageUpload') || editor.isActive('image') || state.selection instanceof CellSelection) {
+            if (editor.isActive('image') || state.selection instanceof CellSelection) {
               return false
             }
             const { selection } = state

@@ -7,6 +7,7 @@
  * Lazy-import pattern keeps `stripe` out of the cold path in stub mode.
  */
 import { serverSupabaseClient } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { isStripeConfigured, STUB_PORTAL_URL } from '../../utils/billing'
 
 export default defineEventHandler(async (event) => {
@@ -24,7 +25,7 @@ export default defineEventHandler(async (event) => {
 
   const membership = await requireActiveOrg(event, supabase, userId)
 
-  const { data: subscription, error } = await (supabase as any)
+  const { data: subscription, error } = await (supabase as SupabaseClient)
     .from('subscriptions')
     .select('stripe_customer_id')
     .eq('organization_id', membership.organizationId)

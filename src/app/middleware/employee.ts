@@ -11,6 +11,9 @@
  * Apply to pages with: definePageMeta({ middleware: 'employee' })
  */
 export default defineNuxtRouteMiddleware(async (to) => {
+  // Demo mode: no real auth, so the fixture user is treated as an employee.
+  if (useRuntimeConfig().public.demoMode) return
+
   const user = useSupabaseUser()
   if (!user.value) {
     return navigateTo(`/auth/login?redirect=${encodeURIComponent(to.fullPath)}`)
@@ -24,9 +27,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (response?.profile?.is_employee !== true) {
       throw createError({ statusCode: 404, statusMessage: 'Not Found', fatal: true })
     }
-  }
-  catch (err: any) {
-    if (err?.statusCode === 404) throw err
+  } catch (err: unknown) {
+    if ((err as { statusCode?: number })?.statusCode === 404) throw err
     throw createError({ statusCode: 404, statusMessage: 'Not Found', fatal: true })
   }
 })

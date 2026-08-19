@@ -13,6 +13,8 @@
  *
  * Lazy `await import('stripe')` keeps the SDK out of the cold path in stub mode.
  */
+import type { H3Event } from 'h3'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { serverSupabaseServiceRole } from '#supabase/server'
 import { isStripeConfigured } from '../../utils/billing'
 import { logAnalyticsEvent } from '../../utils/analytics'
@@ -46,35 +48,35 @@ export default defineEventHandler(async (event) => {
       signature,
       webhookSecret
     )
-  }
-  catch (err) {
-    // eslint-disable-next-line no-console
+  } catch (err) {
     console.error('[stripe-webhook] signature verification failed:', err)
     throw createError({ statusCode: 400, statusMessage: 'Invalid signature.' })
   }
 
-  const supabase = serverSupabaseServiceRole(event)
+  // No generated database.types.ts yet: widen the `SupabaseClient<unknown>` the
+  // module returns to the default (`any`-schema) client so `.from()` typechecks.
+  const supabase = serverSupabaseServiceRole(event) as SupabaseClient
 
   switch (stripeEvent.type) {
     case 'checkout.session.completed': {
       const session = stripeEvent.data.object as import('stripe').default.Checkout.Session
-      await handleCheckoutCompleted(event, supabase as any, stripe, session, stripeEvent.type)
+      await handleCheckoutCompleted(event, supabase, stripe, session, stripeEvent.type)
       break
     }
     case 'customer.subscription.created':
     case 'customer.subscription.updated': {
       const subscription = stripeEvent.data.object as import('stripe').default.Subscription
-      await handleSubscriptionUpdate(event, supabase as any, subscription, stripeEvent.type)
+      await handleSubscriptionUpdate(event, supabase, subscription, stripeEvent.type)
       break
     }
     case 'customer.subscription.deleted': {
       const subscription = stripeEvent.data.object as import('stripe').default.Subscription
-      await handleSubscriptionDeleted(event, supabase as any, subscription, stripeEvent.type)
+      await handleSubscriptionDeleted(event, supabase, subscription, stripeEvent.type)
       break
     }
     case 'invoice.payment_failed': {
       const invoice = stripeEvent.data.object as import('stripe').default.Invoice
-      await handlePaymentFailed(event, supabase as any, invoice, stripeEvent.type)
+      await handlePaymentFailed(event, supabase, invoice, stripeEvent.type)
       break
     }
     default:
@@ -84,16 +86,23 @@ export default defineEventHandler(async (event) => {
   return { received: true }
 })
 
+/**
+ * Stripe's current typings moved `current_period_*` onto subscription items;
+ * the webhook payload still carries them at the top level. Read them loosely.
+ */
+function periodOf(subscription: import('stripe').default.Subscription) {
+  return subscription as unknown as { current_period_start: number, current_period_end: number }
+}
+
 async function handleCheckoutCompleted(
-  event: any,
-  supabase: any,
+  event: H3Event,
+  supabase: SupabaseClient,
   stripe: import('stripe').default,
   session: import('stripe').default.Checkout.Session,
   stripeEventType: string
 ) {
   const organizationId = session.metadata?.organization_id
   if (!organizationId) {
-    // eslint-disable-next-line no-console
     console.error('[stripe-webhook] no organization_id in checkout session metadata')
     return
   }
@@ -106,8 +115,8 @@ async function handleCheckoutCompleted(
     stripe_subscription_id: subscription.id,
     stripe_price_id: subscription.items.data[0]?.price.id,
     status: subscription.status,
-    current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-    current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+    current_period_start: new Date(periodOf(subscription).current_period_start * 1000).toISOString(),
+    current_period_end: new Date(periodOf(subscription).current_period_end * 1000).toISOString(),
     cancel_at_period_end: subscription.cancel_at_period_end
   }, { onConflict: 'organization_id' })
 
@@ -122,8 +131,8 @@ async function handleCheckoutCompleted(
 }
 
 async function handleSubscriptionUpdate(
-  event: any,
-  supabase: any,
+  event: H3Event,
+  supabase: SupabaseClient,
   subscription: import('stripe').default.Subscription,
   stripeEventType: string
 ) {
@@ -136,7 +145,6 @@ async function handleSubscriptionUpdate(
       .maybeSingle()
     organizationId = data?.organization_id
     if (!organizationId) {
-      // eslint-disable-next-line no-console
       console.error('[stripe-webhook] cannot find organization for subscription', subscription.id)
       return
     }
@@ -150,8 +158,8 @@ async function handleSubscriptionUpdate(
 
   await supabase.from('subscriptions').update({
     status: subscription.status,
-    current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-    current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+    current_period_start: new Date(periodOf(subscription).current_period_start * 1000).toISOString(),
+    current_period_end: new Date(periodOf(subscription).current_period_end * 1000).toISOString(),
     cancel_at_period_end: subscription.cancel_at_period_end,
     stripe_price_id: subscription.items.data[0]?.price.id
   }).eq('stripe_subscription_id', subscription.id)
@@ -172,8 +180,8 @@ async function handleSubscriptionUpdate(
 }
 
 async function handleSubscriptionDeleted(
-  event: any,
-  supabase: any,
+  event: H3Event,
+  supabase: SupabaseClient,
   subscription: import('stripe').default.Subscription,
   stripeEventType: string
 ) {
@@ -197,12 +205,12 @@ async function handleSubscriptionDeleted(
 }
 
 async function handlePaymentFailed(
-  event: any,
-  supabase: any,
+  event: H3Event,
+  supabase: SupabaseClient,
   invoice: import('stripe').default.Invoice,
   stripeEventType: string
 ) {
-  const subscriptionId = (invoice as any).subscription as string | null
+  const subscriptionId = (invoice as unknown as { subscription?: string | null }).subscription ?? null
   if (!subscriptionId) return
 
   const { data: existing } = await supabase

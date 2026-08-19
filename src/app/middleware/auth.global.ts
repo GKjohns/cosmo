@@ -40,9 +40,9 @@ export default defineNuxtRouteMiddleware((to) => {
   }
 
   // Authed → bounce away from auth pages.
-  const isAuthLanding =
-    to.path === '/auth/login' ||
-    to.path === '/auth/signup'
+  const isAuthLanding
+    = to.path === '/auth/login'
+      || to.path === '/auth/signup'
 
   if (user.value && isAuthLanding) {
     const redirect = to.query.redirect as string

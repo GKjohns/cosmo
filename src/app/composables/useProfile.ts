@@ -29,12 +29,22 @@ interface ProfileResponse {
   needsOnboarding: boolean
 }
 
+/**
+ * `useSupabaseUser()` is typed as a Supabase `User` but @nuxtjs/supabase 2.x
+ * may hand back raw JWT claims (`sub`, no `id`) — read both.
+ */
+interface UserClaims {
+  id?: string
+  sub?: string
+  user_metadata?: Record<string, string | undefined>
+}
+
 export function useProfile() {
   const user = useSupabaseUser()
   const isDemo = useDemoMode()
   const getUserId = () => {
     if (isDemo.value) return 'demo-user'
-    return (user.value as any)?.id || (user.value as any)?.sub
+    return (user.value as UserClaims | null)?.id || (user.value as UserClaims | null)?.sub
   }
 
   const profile = useState<Profile | null>('user-profile', () => null)
@@ -52,16 +62,14 @@ export function useProfile() {
       needsOnboarding.value = response.needsOnboarding
       isFetched.value = true
       return response.profile
-    }
-    catch (err: any) {
+    } catch (caught: unknown) {
+      const err = caught as CaughtError
       // 401 expected on public routes — quiet that one path.
       if (err?.statusCode !== 401) {
-        // eslint-disable-next-line no-console
         console.error('[useProfile] Error fetching profile:', err)
       }
       return null
-    }
-    finally {
+    } finally {
       isLoading.value = false
     }
   }
@@ -79,15 +87,13 @@ export function useProfile() {
       })
       profile.value = response.profile
       return response.profile
-    }
-    catch (err: any) {
+    } catch (caught: unknown) {
+      const err = caught as CaughtError
       if (err?.statusCode !== 401) {
-        // eslint-disable-next-line no-console
         console.error('[useProfile] Error updating profile:', err)
       }
       return null
-    }
-    finally {
+    } finally {
       isLoading.value = false
     }
   }
@@ -99,13 +105,12 @@ export function useProfile() {
 
   watch(user, async (newUser) => {
     if (isDemo.value) return
-    const userId = (newUser as any)?.id || (newUser as any)?.sub
+    const userId = (newUser as UserClaims | null)?.id || (newUser as UserClaims | null)?.sub
     if (userId) {
       if (!isFetched.value) {
         await fetchProfile()
       }
-    }
-    else {
+    } else {
       profile.value = null
       isFetched.value = false
       needsOnboarding.value = false
@@ -116,7 +121,7 @@ export function useProfile() {
   const displayName = computed(() => {
     if (profile.value?.display_name) return profile.value.display_name
 
-    const oauthMeta = (user.value as any)?.user_metadata
+    const oauthMeta = (user.value as UserClaims | null)?.user_metadata
     if (oauthMeta?.preferred_name) return oauthMeta.preferred_name
     if (oauthMeta?.full_name) return oauthMeta.full_name
     if (oauthMeta?.name) return oauthMeta.name
@@ -128,7 +133,7 @@ export function useProfile() {
   const avatarUrl = computed(() => {
     if (profile.value?.avatar_url) return profile.value.avatar_url
 
-    const oauthMeta = (user.value as any)?.user_metadata
+    const oauthMeta = (user.value as UserClaims | null)?.user_metadata
     return oauthMeta?.avatar_url || oauthMeta?.picture || ''
   })
 

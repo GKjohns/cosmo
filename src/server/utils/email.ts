@@ -24,7 +24,8 @@
 import { Resend } from 'resend'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-type AnyClient = SupabaseClient<any, any, any>
+// Default (`any`-schema) client — projects without generated types still compile.
+type AnyClient = SupabaseClient
 
 const RUNTIME_CONFIG = () => {
   // Inngest workers and cron jobs may not have access to useRuntimeConfig.
@@ -60,8 +61,8 @@ const DEFAULT_BRAND = {
   accent: '#0F172A', // slate-900 to match cosmo's slate primary
   rule: '#E0DED5',
   productName: 'Cosmo',
-  serif: "Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', serif",
-  sans: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif",
+  serif: 'Georgia, \'Iowan Old Style\', \'Palatino Linotype\', Palatino, \'Book Antiqua\', serif',
+  sans: '-apple-system, BlinkMacSystemFont, \'Inter\', \'Segoe UI\', system-ui, sans-serif',
   unsubscribeEmail: 'hello@example.com',
   tagline: 'Sent by Cosmo.'
 }

@@ -5,7 +5,7 @@ const appeared = ref(false)
 
 let animationId: number | null = null
 let A = 0
-let B = 0.8 // fixed tilt — gives a nice 3/4 view
+const B = 0.8 // fixed tilt — gives a nice 3/4 view
 
 const charRamp = ' .,-~:;=!*#$@'
 

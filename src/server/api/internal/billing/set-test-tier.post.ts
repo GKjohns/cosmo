@@ -8,6 +8,7 @@
  * Body: { tier: 'free' | 'pro' | 'alpha' | null }
  */
 import { serverSupabaseClient } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export default defineEventHandler(async (event) => {
   const supabase = await serverSupabaseClient(event)
@@ -19,7 +20,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid tier.' })
   }
 
-  const { error } = await (supabase as any)
+  const { error } = await (supabase as SupabaseClient)
     .from('profiles')
     .update({ test_tier: tier })
     .eq('id', userId)

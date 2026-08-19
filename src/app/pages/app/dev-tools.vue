@@ -7,8 +7,7 @@
  *   - adds a "Send test email" probe wired to /api/internal/test-email
  *   - test-user table reads `item_count` from cosmo's items table
  */
-import type { TabsItem, TableColumn } from '@nuxt/ui'
-import type { Row } from '@tanstack/table-core'
+import type { TabsItem, TableColumn, TableRow } from '@nuxt/ui'
 
 definePageMeta({
   layout: 'dashboard',
@@ -56,8 +55,7 @@ async function checkApi() {
     apiLatency.value = Math.round(performance.now() - start)
     apiResponse.value = response
     apiStatus.value = 'ok'
-  }
-  catch (e) {
+  } catch (e) {
     apiStatus.value = 'error'
     apiError.value = e instanceof Error ? e.message : 'Request failed'
   }
@@ -79,8 +77,8 @@ async function checkSupabase() {
     supabaseLatency.value = Math.round(performance.now() - start)
     if (error) throw error
     supabaseStatus.value = 'ok'
-  }
-  catch (e: any) {
+  } catch (caught: unknown) {
+    const e = caught as CaughtError
     supabaseStatus.value = 'error'
     supabaseError.value = e?.message || 'Connection failed'
   }
@@ -113,8 +111,7 @@ async function checkStorage() {
     }
 
     storageStatus.value = 'ok'
-  }
-  catch (e) {
+  } catch (e) {
     storageStatus.value = 'error'
     storageError.value = e instanceof Error ? e.message : 'Storage unavailable'
   }
@@ -151,8 +148,8 @@ async function sendTestEmail() {
       description: result.error || `dedupe: ${result.dedupeKey}`,
       color: result.status === 'sent' ? 'success' : 'warning'
     })
-  }
-  catch (e: any) {
+  } catch (caught: unknown) {
+    const e = caught as CaughtError
     emailStatus.value = 'error'
     toast.add({
       title: 'Test email request failed',
@@ -175,7 +172,10 @@ function emailLabel(status: string): string {
 }
 
 // === Env / browser inspector ===
-const userId = computed(() => (user.value as any)?.id || (user.value as any)?.sub)
+const userId = computed(() => {
+  const claims = user.value as { id?: string, sub?: string } | null
+  return claims?.id || claims?.sub
+})
 
 const envInfo = computed(() => [
   { label: 'Mode', value: import.meta.dev ? 'Development' : 'Production' },
@@ -191,7 +191,7 @@ const envInfo = computed(() => [
 
 const browserInfo = computed(() => {
   if (!import.meta.client) return []
-  const nav = navigator as any
+  const nav = navigator as Navigator & { deviceMemory?: number }
   return [
     { label: 'User Agent', value: navigator.userAgent },
     { label: 'Platform', value: navigator.platform },
@@ -216,8 +216,7 @@ async function copyToClipboard(text: string, label: string) {
       description: label,
       color: 'success'
     })
-  }
-  catch {
+  } catch {
     toast.add({
       title: 'Failed to copy',
       description: 'Clipboard not available',
@@ -275,8 +274,8 @@ async function createAndSwitchToUser() {
     const result = await createTestUser()
     lastCreatedTestUser.value = result
     window.location.href = result.magicLink
-  }
-  catch (e: any) {
+  } catch (caught: unknown) {
+    const e = caught as CaughtError
     toast.add({
       title: 'Failed to create test user',
       description: e?.data?.statusMessage || e?.message || 'Unknown error',
@@ -294,15 +293,14 @@ async function createAndCopyLink() {
     lastCreatedTestUser.value = result
     await copyToClipboard(result.magicLink, 'Magic link')
     await fetchTestUsers()
-  }
-  catch (e: any) {
+  } catch (caught: unknown) {
+    const e = caught as CaughtError
     toast.add({
       title: 'Failed to create test user',
       description: e?.data?.statusMessage || e?.message || 'Unknown error',
       color: 'error'
     })
-  }
-  finally {
+  } finally {
     isCreatingTestUser.value = false
   }
 }
@@ -326,15 +324,14 @@ async function fetchTestUsers() {
   isLoadingTestUsers.value = true
   try {
     testUsers.value = await $fetch<TestUserListItem[]>('/api/internal/test-users')
-  }
-  catch (e: any) {
+  } catch (caught: unknown) {
+    const e = caught as CaughtError
     toast.add({
       title: 'Failed to load test users',
       description: e?.data?.statusMessage || e?.message || 'Unknown error',
       color: 'error'
     })
-  }
-  finally {
+  } finally {
     isLoadingTestUsers.value = false
   }
 }
@@ -348,8 +345,8 @@ async function loginAsTestUser(testUserId: string) {
       { method: 'POST' }
     )
     window.location.href = magicLink
-  }
-  catch (e: any) {
+  } catch (caught: unknown) {
+    const e = caught as CaughtError
     loginLoadingUserId.value = null
     toast.add({
       title: 'Failed to generate login link',
@@ -374,15 +371,14 @@ async function executeDeleteUser() {
     await $fetch(`/api/internal/test-users/${testUserId}`, { method: 'DELETE' })
     toast.add({ title: 'Test user deleted', color: 'success' })
     await fetchTestUsers()
-  }
-  catch (e: any) {
+  } catch (caught: unknown) {
+    const e = caught as CaughtError
     toast.add({
       title: 'Failed to delete test user',
       description: e?.data?.statusMessage || e?.message || 'Unknown error',
       color: 'error'
     })
-  }
-  finally {
+  } finally {
     deleteLoadingUserId.value = null
     userToDelete.value = null
   }
@@ -401,22 +397,20 @@ async function executeDeleteAllUsers() {
 
     if (total === 0) {
       toast.add({ title: 'No test users to delete', color: 'neutral' })
-    }
-    else if (failed === 0) {
+    } else if (failed === 0) {
       toast.add({
         title: `Deleted ${deleted} test user${deleted !== 1 ? 's' : ''}`,
         color: 'success'
       })
-    }
-    else {
+    } else {
       toast.add({
         title: `Deleted ${deleted}, failed ${failed}`,
         description: 'Some users could not be deleted',
         color: 'warning'
       })
     }
-  }
-  catch (e: any) {
+  } catch (caught: unknown) {
+    const e = caught as CaughtError
     toast.add({
       title: 'Failed to delete test users',
       description: e?.data?.statusMessage || e?.message || 'Unknown error',
@@ -434,7 +428,7 @@ watch(activeTab, (newTab) => {
   }
 })
 
-function getTestUserRowItems(row: Row<TestUserListItem>) {
+function getTestUserRowItems(row: TableRow<TestUserListItem>) {
   const isBusy = loginLoadingUserId.value === row.original.id || deleteLoadingUserId.value === row.original.id
 
   return [
@@ -503,24 +497,24 @@ const testUserColumns: TableColumn<TestUserListItem>[] = [
 
       return h('div', { class: 'flex items-center justify-end gap-1' }, [
         h(UButton, {
-          icon: 'i-lucide-trash-2',
-          color: 'error',
-          variant: 'ghost',
-          size: 'xs',
-          loading: isDeleting,
-          disabled: isBusy && !isDeleting,
+          'icon': 'i-lucide-trash-2',
+          'color': 'error',
+          'variant': 'ghost',
+          'size': 'xs',
+          'loading': isDeleting,
+          'disabled': isBusy && !isDeleting,
           'data-row-action': '',
-          onClick: () => { confirmDeleteUser(row.original) }
+          'onClick': () => { confirmDeleteUser(row.original) }
         }),
         h(
           UDropdownMenu,
           { content: { align: 'end' }, items: getTestUserRowItems(row) },
           () => h(UButton, {
-            icon: 'i-lucide-ellipsis-vertical',
-            color: 'neutral',
-            variant: 'ghost',
-            size: 'xs',
-            disabled: isBusy,
+            'icon': 'i-lucide-ellipsis-vertical',
+            'color': 'neutral',
+            'variant': 'ghost',
+            'size': 'xs',
+            'disabled': isBusy,
             'data-row-action': ''
           })
         )
@@ -604,7 +598,9 @@ function getStatusClasses(status: CheckStatus) {
                     <div class="text-xs">
                       <template v-if="apiStatus === 'ok' && apiResponse">
                         <div class="flex items-center gap-2 mb-2 flex-wrap">
-                          <UBadge color="success" variant="subtle" size="xs">OK</UBadge>
+                          <UBadge color="success" variant="subtle" size="xs">
+                            OK
+                          </UBadge>
                           <span class="text-muted">{{ apiLatency }}ms</span>
                           <span class="text-muted">•</span>
                           <span class="text-muted">{{ apiResponse.serverTime || apiResponse.ts }}</span>
@@ -612,7 +608,9 @@ function getStatusClasses(status: CheckStatus) {
                       </template>
                       <template v-else-if="apiStatus === 'error'">
                         <div class="flex items-center gap-2 flex-wrap">
-                          <UBadge color="error" variant="subtle" size="xs">Failed</UBadge>
+                          <UBadge color="error" variant="subtle" size="xs">
+                            Failed
+                          </UBadge>
                           <span class="text-error break-all">{{ apiError }}</span>
                         </div>
                       </template>
@@ -646,11 +644,15 @@ function getStatusClasses(status: CheckStatus) {
                     </p>
                     <div class="flex items-center gap-2 text-xs flex-wrap">
                       <template v-if="supabaseStatus === 'ok'">
-                        <UBadge color="success" variant="subtle" size="xs">Connected</UBadge>
+                        <UBadge color="success" variant="subtle" size="xs">
+                          Connected
+                        </UBadge>
                         <span class="text-muted">{{ supabaseLatency }}ms</span>
                       </template>
                       <template v-else-if="supabaseStatus === 'error'">
-                        <UBadge color="error" variant="subtle" size="xs">Failed</UBadge>
+                        <UBadge color="error" variant="subtle" size="xs">
+                          Failed
+                        </UBadge>
                         <span class="text-error break-all">{{ supabaseError }}</span>
                       </template>
                       <template v-else-if="supabaseStatus === 'checking'">
@@ -684,7 +686,9 @@ function getStatusClasses(status: CheckStatus) {
                     <div class="text-xs">
                       <template v-if="storageStatus === 'ok'">
                         <div class="flex items-center gap-2 flex-wrap">
-                          <UBadge color="success" variant="subtle" size="xs">Available</UBadge>
+                          <UBadge color="success" variant="subtle" size="xs">
+                            Available
+                          </UBadge>
                           <span v-if="storageQuota" class="text-muted">
                             {{ storageQuota.used }} / {{ storageQuota.total }}
                           </span>
@@ -692,7 +696,9 @@ function getStatusClasses(status: CheckStatus) {
                       </template>
                       <template v-else-if="storageStatus === 'error'">
                         <div class="flex items-center gap-2 flex-wrap">
-                          <UBadge color="error" variant="subtle" size="xs">Unavailable</UBadge>
+                          <UBadge color="error" variant="subtle" size="xs">
+                            Unavailable
+                          </UBadge>
                           <span class="text-error break-all">{{ storageError }}</span>
                         </div>
                       </template>

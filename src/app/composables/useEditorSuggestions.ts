@@ -62,10 +62,6 @@ export function useEditorSuggestions<T extends EditorCustomHandlers>(_customHand
     label: 'Emoji',
     icon: 'i-lucide-smile-plus'
   }, {
-    kind: 'imageUpload',
-    label: 'Image',
-    icon: 'i-lucide-image'
-  }, {
     kind: 'table',
     label: 'Table',
     icon: 'i-lucide-table'

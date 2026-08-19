@@ -29,9 +29,9 @@ type InvitationRecord = {
   } | null
 }
 
-type InviteResponse =
-  | { mode: 'auto_added', email: string }
-  | { mode: 'invited', invitation: InvitationRecord }
+type InviteResponse
+  = | { mode: 'auto_added', email: string }
+    | { mode: 'invited', invitation: InvitationRecord }
 
 const { data: membersData, refresh: refreshMembers, status: membersStatus } = useLazyFetch<{
   members: MemberRecord[]
@@ -90,8 +90,7 @@ async function sendInvitation() {
         description: `${result.email} already had an account, so they were added to the team right away.`,
         color: 'success'
       })
-    }
-    else {
+    } else {
       toast.add({
         title: 'Invitation created',
         description: 'Copy the invite link to share it with your teammate.',
@@ -103,15 +102,14 @@ async function sendInvitation() {
     inviteRole.value = 'member'
     showInviteModal.value = false
     await Promise.all([refreshMembers(), refreshInvitations()])
-  }
-  catch (err: any) {
+  } catch (caught: unknown) {
+    const err = caught as CaughtError
     toast.add({
       title: 'Unable to send invitation',
       description: err?.data?.message || err?.message || 'Something went wrong.',
       color: 'error'
     })
-  }
-  finally {
+  } finally {
     isSendingInvite.value = false
   }
 }
@@ -121,8 +119,7 @@ async function revokeInvitation(id: string) {
     await $fetch(`/api/app/invitations/${id}`, { method: 'DELETE' })
     toast.add({ title: 'Invitation revoked', color: 'success' })
     await refreshInvitations()
-  }
-  catch {
+  } catch {
     toast.add({ title: 'Unable to revoke invitation', color: 'error' })
   }
 }
@@ -135,8 +132,8 @@ async function updateRole(membershipId: string, role: string) {
     })
     toast.add({ title: 'Role updated', color: 'success' })
     await refreshMembers()
-  }
-  catch (err: any) {
+  } catch (caught: unknown) {
+    const err = caught as CaughtError
     toast.add({
       title: 'Unable to update role',
       description: err?.data?.message || err?.message || 'Something went wrong.',
@@ -152,8 +149,8 @@ async function removeMember(membershipId: string, name: string) {
     await $fetch(`/api/app/members/${membershipId}`, { method: 'DELETE' })
     toast.add({ title: `${name} has been removed`, color: 'success' })
     await refreshMembers()
-  }
-  catch (err: any) {
+  } catch (caught: unknown) {
+    const err = caught as CaughtError
     toast.add({
       title: 'Unable to remove member',
       description: err?.data?.message || err?.message || 'Something went wrong.',
@@ -167,7 +164,9 @@ function copyInviteLink(token: string) {
   navigator.clipboard.writeText(url)
   copiedToken.value = token
   toast.add({ title: 'Link copied', color: 'success' })
-  setTimeout(() => { copiedToken.value = null }, 2000)
+  setTimeout(() => {
+    copiedToken.value = null
+  }, 2000)
 }
 </script>
 
@@ -238,7 +237,12 @@ function copyInviteLink(token: string) {
               :ui="{ value: 'capitalize', item: 'capitalize' }"
               @update:model-value="updateRole(member.id, $event)"
             />
-            <UBadge v-else :color="member.role === 'admin' ? 'primary' : 'neutral'" variant="subtle" class="capitalize">
+            <UBadge
+              v-else
+              :color="member.role === 'admin' ? 'primary' : 'neutral'"
+              variant="subtle"
+              class="capitalize"
+            >
               {{ member.role }}
             </UBadge>
 
@@ -313,7 +317,12 @@ function copyInviteLink(token: string) {
           </div>
 
           <div class="flex items-center gap-2">
-            <UBadge :color="invite.role === 'admin' ? 'primary' : 'neutral'" variant="subtle" size="sm" class="capitalize">
+            <UBadge
+              :color="invite.role === 'admin' ? 'primary' : 'neutral'"
+              variant="subtle"
+              size="sm"
+              class="capitalize"
+            >
               {{ invite.role }}
             </UBadge>
 

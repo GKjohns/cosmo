@@ -5,16 +5,16 @@ import type { Period, Range } from '~/types'
 
 definePageMeta({ layout: 'dashboard' })
 
-const { isNotificationsSlideoverOpen } = useDashboard()
+useDashboard()
 
 const items = [[{
-  label: 'New dispatch',
-  icon: 'i-lucide-send',
-  to: '/app/inbox'
+  label: 'New chat',
+  icon: 'i-lucide-message-circle',
+  to: '/app/chat'
 }, {
-  label: 'New personnel',
-  icon: 'i-lucide-user-plus',
-  to: '/app/customers'
+  label: 'New document',
+  icon: 'i-lucide-file-text',
+  to: '/app/editor'
 }]] satisfies DropdownMenuItem[][]
 
 const range = shallowRef<Range>({
@@ -33,19 +33,6 @@ const period = ref<Period>('daily')
         </template>
 
         <template #right>
-          <UTooltip text="Notifications" :shortcuts="['N']">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              square
-              @click="isNotificationsSlideoverOpen = true"
-            >
-              <UChip color="error" inset>
-                <UIcon name="i-lucide-bell" class="size-5 shrink-0" />
-              </UChip>
-            </UButton>
-          </UTooltip>
-
           <UDropdownMenu :items="items">
             <UButton icon="i-lucide-plus" size="md" class="rounded-full" />
           </UDropdownMenu>

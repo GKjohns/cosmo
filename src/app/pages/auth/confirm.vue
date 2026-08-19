@@ -15,9 +15,9 @@ const errorCode = computed(
   () => route.query.error_code as string || route.hash.match(/error_code=([^&]+)/)?.[1]
 )
 const errorDescription = computed(() => {
-  const desc =
-    (route.query.error_description as string) ||
-    route.hash.match(/error_description=([^&]+)/)?.[1]
+  const desc
+    = (route.query.error_description as string)
+      || route.hash.match(/error_description=([^&]+)/)?.[1]
 
   return desc ? decodeURIComponent(desc.replace(/\+/g, ' ')) : ''
 })

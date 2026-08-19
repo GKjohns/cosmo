@@ -137,6 +137,10 @@ const mailtoHref = computed(() => `mailto:${supportEmail}?subject=${supportSubje
         </section>
       </div>
 
+      <section id="feedback" class="mt-16 sm:mt-20">
+        <FeedbackForm product-name="Cosmo" back-to="/help" />
+      </section>
+
       <div class="mt-16 sm:mt-20 rounded-lg border border-default bg-elevated p-8 sm:p-10 text-center">
         <h2 class="text-2xl font-semibold tracking-tight text-highlighted">
           Still need help?

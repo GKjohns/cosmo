@@ -66,7 +66,6 @@ export async function getUserTier(
       .maybeSingle<{ is_employee: boolean | null, test_tier: string | null }>()
 
     if (profileError && profileError.code !== '42P01') {
-      // eslint-disable-next-line no-console
       console.error('[subscription] failed to read profile:', profileError)
     }
 
@@ -86,7 +85,6 @@ export async function getUserTier(
       .eq('user_id', userId) as unknown as { data: Array<{ organization_id: string, subscriptions: SubscriptionRow[] | SubscriptionRow | null }> | null, error: { code?: string } | null }
 
     if (error && error.code !== 'PGRST116' && error.code !== '42P01') {
-      // eslint-disable-next-line no-console
       console.error('[subscription] failed to read subscriptions:', error)
       return 'free'
     }
@@ -110,9 +108,7 @@ export async function getUserTier(
     }
 
     return 'free'
-  }
-  catch (err) {
-    // eslint-disable-next-line no-console
+  } catch (err) {
     console.error('[subscription] getUserTier threw:', err)
     return 'free'
   }
@@ -164,7 +160,6 @@ async function checkQuota(
     : await query.eq('user_id', userId)
 
   if (error) {
-    // eslint-disable-next-line no-console
     console.error(`[subscription] failed to count ${table}:`, error)
     return { allowed: true }
   }

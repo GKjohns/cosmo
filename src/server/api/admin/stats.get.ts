@@ -205,7 +205,7 @@ export default defineEventHandler(async (event): Promise<AdminStatsResponse> => 
   const items = (itemsResult.data ?? []) as ItemRow[]
   const feedbackRows = (feedbackResult.data ?? []) as FeedbackRow[]
   const analyticsEvents = (analyticsEventsResult.data ?? []) as AnalyticsEvent[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const authUsers = (authUsersResult.data?.users ?? []) as Array<{ id: string, email?: string | null }>
 
   // Lookups

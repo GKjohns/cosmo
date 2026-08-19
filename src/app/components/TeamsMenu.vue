@@ -59,15 +59,13 @@ async function createTeam() {
     newTeamName.value = ''
     toast.add({ title: 'Team created', color: 'success' })
     await switchOrganization(organization.id)
-  }
-  catch (err) {
+  } catch (err) {
     toast.add({
       title: 'Unable to create team',
       description: err instanceof Error ? err.message : 'Something went wrong.',
       color: 'error'
     })
-  }
-  finally {
+  } finally {
     creating.value = false
   }
 }

@@ -16,11 +16,6 @@ export function useEditorToolbar<T extends EditorCustomHandlers>(_customHandlers
     kind: 'redo',
     icon: 'i-lucide-redo',
     tooltip: { text: 'Redo' }
-  }], [{
-    kind: 'imageUpload',
-    label: 'Add',
-    icon: 'i-lucide-image',
-    tooltip: { text: 'Add image' }
   }]]
 
   const bubbleToolbarItems = computed(() => [[{
@@ -165,10 +160,6 @@ export function useEditorToolbar<T extends EditorCustomHandlers>(_customHandlers
   }], [{
     slot: 'link' as const,
     icon: 'i-lucide-link'
-  }, {
-    kind: 'imageUpload',
-    icon: 'i-lucide-image',
-    tooltip: { text: 'Image' }
   }]] satisfies EditorToolbarItem<T>[][])
 
   const getImageToolbarItems = (editor: Editor): EditorToolbarItem<T>[][] => {
@@ -179,20 +170,6 @@ export function useEditorToolbar<T extends EditorCustomHandlers>(_customHandlers
       to: node?.attrs?.src,
       download: true,
       tooltip: { text: 'Download' }
-    }, {
-      icon: 'i-lucide-refresh-cw',
-      tooltip: { text: 'Replace' },
-      onClick: () => {
-        const { state } = editor
-        const { selection } = state
-
-        const pos = selection.from
-        const node = state.doc.nodeAt(pos)
-
-        if (node && node.type.name === 'image') {
-          editor.chain().focus().deleteRange({ from: pos, to: pos + node.nodeSize }).insertContentAt(pos, { type: 'imageUpload' }).run()
-        }
-      }
     }], [{
       icon: 'i-lucide-trash',
       tooltip: { text: 'Delete' },

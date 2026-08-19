@@ -6,6 +6,7 @@
  * `isStripeConfigured()` internally.
  */
 import { serverSupabaseClient } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { getUserTier } from '../../utils/subscription'
 import { isStripeConfigured } from '../../utils/billing'
 import { isDemoMode } from '../../utils/runtimeKeys'
@@ -26,7 +27,7 @@ export default defineEventHandler(async (event) => {
   const supabase = await serverSupabaseClient(event)
   const userId = await requireUserId(event, supabase)
 
-  const tier = await getUserTier(supabase as any, userId)
+  const tier = await getUserTier(supabase as SupabaseClient, userId)
 
   // Resolve the user's primary org so we can look up subscription + item count.
   const { data: membership } = await supabase
@@ -47,7 +48,7 @@ export default defineEventHandler(async (event) => {
     const orgId = membership.organization_id
 
     if (isStripeConfigured()) {
-      const { data: sub } = await (supabase as any)
+      const { data: sub } = await (supabase as SupabaseClient)
         .from('subscriptions')
         .select('status, cancel_at_period_end, current_period_end, stripe_customer_id')
         .eq('organization_id', orgId)

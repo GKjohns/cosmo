@@ -9,6 +9,7 @@
  * reusing an existing customer if `subscriptions.stripe_customer_id` is set.
  */
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { isStripeConfigured, STUB_CHECKOUT_URL } from '../../utils/billing'
 
 export default defineEventHandler(async (event) => {
@@ -35,7 +36,7 @@ export default defineEventHandler(async (event) => {
   const membership = await requireActiveOrg(event, supabase, userId)
 
   // Look up an existing customer if any.
-  const { data: existingSub } = await (supabase as any)
+  const { data: existingSub } = await (supabase as SupabaseClient)
     .from('subscriptions')
     .select('stripe_customer_id, status')
     .eq('organization_id', membership.organizationId)

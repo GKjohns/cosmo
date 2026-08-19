@@ -57,15 +57,14 @@ async function createTeam() {
     await refreshOrg()
     await switchOrganization(organization.id)
     await navigateTo('/app')
-  }
-  catch (err: any) {
+  } catch (caught: unknown) {
+    const err = caught as CaughtError
     toast.add({
       title: 'Unable to create team',
       description: err?.data?.message || err?.message || 'Something went wrong.',
       color: 'error'
     })
-  }
-  finally {
+  } finally {
     creating.value = false
   }
 }
@@ -84,15 +83,14 @@ async function acceptInvite(token: string) {
     await refreshOrg()
     await switchOrganization(result.organizationId)
     await navigateTo('/app')
-  }
-  catch (err: any) {
+  } catch (caught: unknown) {
+    const err = caught as CaughtError
     toast.add({
       title: 'Unable to accept invitation',
       description: err?.data?.message || err?.message || 'This invitation may have expired.',
       color: 'error'
     })
-  }
-  finally {
+  } finally {
     accepting.value = false
   }
 }
@@ -105,8 +103,7 @@ async function acceptWithToken() {
   try {
     const url = new URL(token)
     parsed = url.searchParams.get('token') ?? token
-  }
-  catch {
+  } catch {
     // not a URL — treat as raw token
   }
 

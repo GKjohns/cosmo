@@ -29,15 +29,14 @@ onMounted(async () => {
 
     if (result.alreadyMember) {
       toast.add({ title: 'You are already a member of this team', color: 'info' })
-    }
-    else {
+    } else {
       toast.add({ title: 'Welcome to the team.', color: 'success' })
     }
 
     await switchOrganization(result.organizationId)
     await navigateTo('/app')
-  }
-  catch (err: any) {
+  } catch (caught: unknown) {
+    const err = caught as CaughtError
     status.value = 'error'
     errorMessage.value = err?.data?.message || err?.message || 'Unable to accept invitation.'
   }
@@ -68,7 +67,12 @@ onMounted(async () => {
       <p class="text-sm text-muted max-w-sm mx-auto">
         {{ errorMessage }}
       </p>
-      <UButton to="/app" color="neutral" variant="soft" class="mt-2">
+      <UButton
+        to="/app"
+        color="neutral"
+        variant="soft"
+        class="mt-2"
+      >
         Go to dashboard
       </UButton>
     </template>

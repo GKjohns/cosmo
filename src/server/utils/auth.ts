@@ -33,7 +33,6 @@ export async function resolveUserId(
     const { data: userResult, error: userError } = await supabase.auth.getUser(token)
 
     if (userError) {
-      // eslint-disable-next-line no-console
       console.error('Supabase auth.getUser error:', userError)
     } else {
       return userResult.user?.id ?? null
@@ -42,7 +41,7 @@ export async function resolveUserId(
 
   // Fall back to cookie-based auth.
   const authUser = await serverSupabaseUser(event)
-  return (authUser as any)?.sub || authUser?.id || null
+  return (authUser as { sub?: string } | null)?.sub || authUser?.id || null
 }
 
 /**

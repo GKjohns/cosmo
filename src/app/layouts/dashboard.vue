@@ -73,7 +73,5 @@ const navItems = computed(() => mainNav.value.map(item => ({
     <UDashboardSearch :groups="commandGroups" />
 
     <slot />
-
-    <NotificationsSlideover />
   </UDashboardGroup>
 </template>

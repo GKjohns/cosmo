@@ -74,9 +74,9 @@ function isReal(value: string, demoMarker?: string): boolean {
 export function isSupabaseConfigured(event?: H3Event): boolean {
   const k = readKeys(event)
   return (
-    isReal(k.supabaseUrl, DEMO_SUPABASE_URL) &&
-    isReal(k.supabaseAnonKey, DEMO_SUPABASE_ANON_KEY) &&
-    isReal(k.supabaseServiceRoleKey)
+    isReal(k.supabaseUrl, DEMO_SUPABASE_URL)
+    && isReal(k.supabaseAnonKey, DEMO_SUPABASE_ANON_KEY)
+    && isReal(k.supabaseServiceRoleKey)
   )
 }
 

@@ -24,6 +24,8 @@ const loading = ref(false)
 const formError = ref<string | null>(null)
 const showEmailForm = ref(false)
 const initialEmail = ref('')
+// TODO(sprint 3): file is replaced verbatim by Camera Shy's login/signup.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const emailInputRef = ref<any | null>(null)
 
 // Demo mode short-circuit: no Supabase, no auth — just walk to /app.
@@ -37,11 +39,12 @@ async function expandEmailForm() {
   state.email = initialEmail.value
 
   await nextTick()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO(sprint 3)
   const component = emailInputRef.value as any
-  const el =
-    component?.$el?.querySelector?.('input') ||
-    component?.$el ||
-    component
+  const el
+    = component?.$el?.querySelector?.('input')
+      || component?.$el
+      || component
 
   if (el && typeof el.focus === 'function') {
     el.focus()
@@ -85,7 +88,8 @@ async function onSubmit(_event: FormSubmitEvent<Schema>) {
 
     const redirect = (route.query.redirect as string | undefined) || '/app'
     await router.push(redirect)
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught as CaughtError
     formError.value = error?.message || 'Unable to sign in. Please try again.'
   } finally {
     loading.value = false
@@ -98,10 +102,10 @@ async function signInWithGoogle() {
     formError.value = null
 
     if (import.meta.client) {
-      const redirect =
-        (route.query.redirect as string | undefined) ||
-        localStorage.getItem('auth_redirect') ||
-        '/app'
+      const redirect
+        = (route.query.redirect as string | undefined)
+          || localStorage.getItem('auth_redirect')
+          || '/app'
       localStorage.setItem('auth_redirect', redirect)
     }
 
@@ -116,7 +120,8 @@ async function signInWithGoogle() {
       console.error('Google sign-in error:', error)
       formError.value = error.message
     }
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught as CaughtError
     console.error('Unexpected error:', error)
     formError.value = error?.message || 'Unable to sign in with Google.'
   } finally {

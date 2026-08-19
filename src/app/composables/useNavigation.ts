@@ -50,16 +50,10 @@ export function useNavigation() {
         active: route.path === '/app'
       },
       {
-        label: 'Items',
-        icon: 'i-lucide-list-checks',
-        to: '/app/items',
-        active: route.path.startsWith('/app/items')
-      },
-      {
         label: 'AI',
         icon: 'i-lucide-sparkles',
         to: '/app/chat',
-        active: route.path.startsWith('/app/chat') || route.path.startsWith('/app/ai'),
+        active: route.path.startsWith('/app/chat'),
         defaultOpen: route.path.startsWith('/app/chat'),
         children: recentChatChildren.value.length > 0 ? recentChatChildren.value : undefined
       },
@@ -82,10 +76,6 @@ export function useNavigation() {
         active: route.path.startsWith('/app/settings')
       }
     ]
-
-    // Demo scaffolds — left commented for projects to opt back in:
-    // { label: 'Inbox', icon: 'i-lucide-inbox', to: '/app/inbox' },
-    // { label: 'Customers', icon: 'i-lucide-users', to: '/app/customers' },
 
     if (isEmployee.value) {
       items.push(

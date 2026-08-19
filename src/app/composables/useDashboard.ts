@@ -1,25 +1,17 @@
 import { createSharedComposable } from '@vueuse/core'
 
+/**
+ * Dashboard-wide keyboard shortcuts. Called once from the `/app` home page;
+ * shared so re-mounts don't double-register.
+ */
 const _useDashboard = () => {
-  const route = useRoute()
   const router = useRouter()
-  const isNotificationsSlideoverOpen = ref(false)
 
   defineShortcuts({
-    'g-h': () => router.push('/'),
-    'g-i': () => router.push('/inbox'),
-    'g-c': () => router.push('/customers'),
-    'g-s': () => router.push('/settings'),
-    'n': () => isNotificationsSlideoverOpen.value = !isNotificationsSlideoverOpen.value
+    'g-h': () => router.push('/app'),
+    'g-c': () => router.push('/app/chat'),
+    'g-s': () => router.push('/app/settings')
   })
-
-  watch(() => route.fullPath, () => {
-    isNotificationsSlideoverOpen.value = false
-  })
-
-  return {
-    isNotificationsSlideoverOpen
-  }
 }
 
 export const useDashboard = createSharedComposable(_useDashboard)

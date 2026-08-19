@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
 
-  return (data ?? []).map((m: any) => ({
+  return (data ?? []).map(m => ({
     membershipId: m.id,
     role: m.role,
     organization: m.organization

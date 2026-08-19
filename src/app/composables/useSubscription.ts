@@ -73,11 +73,10 @@ export function useSubscription() {
         stripeConfigured: data.stripeConfigured
       }
       itemCount.value = data.itemCount ?? 0
-    }
-    catch (err: any) {
+    } catch (caught: unknown) {
+      const err = caught as CaughtError
       // Quiet 401 — happens on public/auth pages.
       if (err?.statusCode !== 401) {
-        // eslint-disable-next-line no-console
         console.error('[useSubscription] refresh failed:', err)
       }
     }
@@ -99,13 +98,12 @@ export function useSubscription() {
       if (response?.url) {
         if (response.stub) {
           await navigateTo(response.url)
-        }
-        else {
+        } else {
           window.location.href = response.url
         }
       }
-    }
-    catch (err: any) {
+    } catch (caught: unknown) {
+      const err = caught as CaughtError
       toast.add({
         title: 'Checkout unavailable',
         description: err?.data?.statusMessage || 'Please try again later.',
@@ -131,13 +129,12 @@ export function useSubscription() {
       if (response?.url) {
         if (response.stub) {
           await navigateTo(response.url)
-        }
-        else {
+        } else {
           window.location.href = response.url
         }
       }
-    }
-    catch (err: any) {
+    } catch (caught: unknown) {
+      const err = caught as CaughtError
       toast.add({
         title: 'Could not open billing portal',
         description: err?.data?.statusMessage || 'Please try again later.',

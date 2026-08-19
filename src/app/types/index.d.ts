@@ -1,32 +1,10 @@
-import type { AvatarProps } from '@nuxt/ui'
+/**
+ * Shapes for the `/app` home widgets (`components/home/*`), inherited from
+ * the Nuxt UI dashboard template. Project-specific types belong next to the
+ * feature that owns them, not here.
+ */
 
-export type UserStatus = 'subscribed' | 'unsubscribed' | 'bounced'
-export type SaleStatus = 'paid' | 'failed' | 'refunded'
-
-export interface User {
-  id: number
-  name: string
-  email: string
-  avatar?: AvatarProps
-  status: UserStatus
-  location: string
-}
-
-export interface Mail {
-  id: number
-  unread?: boolean
-  from: User
-  subject: string
-  body: string
-  date: string
-}
-
-export interface Member {
-  name: string
-  username: string
-  role: 'member' | 'owner'
-  avatar: AvatarProps
-}
+export type SaleStatus = 'completed' | 'failed' | 'aborted'
 
 export interface Stat {
   title: string
@@ -42,14 +20,6 @@ export interface Sale {
   status: SaleStatus
   email: string
   amount: number
-}
-
-export interface Notification {
-  id: number
-  unread?: boolean
-  sender: User
-  body: string
-  date: string
 }
 
 export type Period = 'daily' | 'weekly' | 'monthly'

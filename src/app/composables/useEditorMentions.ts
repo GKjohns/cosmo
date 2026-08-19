@@ -1,7 +1,11 @@
 import type { EditorMentionMenuItem } from '@nuxt/ui'
-import type { CollaborationUser } from './useEditorCollaboration'
 
-const FALLBACK_USERS = [{
+/**
+ * `@mention` candidates for the editor. Fixture list until a project wires
+ * real users (org members) — collaboration/presence was dropped from the
+ * template, so there is no live user list to draw from.
+ */
+const FALLBACK_USERS: EditorMentionMenuItem[] = [{
   label: 'benjamincanac',
   avatar: { src: 'https://avatars.githubusercontent.com/u/739984?v=4' }
 }, {
@@ -12,20 +16,8 @@ const FALLBACK_USERS = [{
   avatar: { src: 'https://avatars.githubusercontent.com/u/71938701?v=4' }
 }]
 
-export function useEditorMentions(collaborationUsers?: Ref<CollaborationUser[]>) {
-  const items = computed<EditorMentionMenuItem[]>(() => {
-    if (!collaborationUsers?.value?.length) {
-      return FALLBACK_USERS
-    }
-
-    return collaborationUsers.value.map(user => ({
-      label: user.name,
-      avatar: {
-        alt: user.name,
-        style: { color: user.color }
-      }
-    }))
-  })
+export function useEditorMentions() {
+  const items = computed<EditorMentionMenuItem[]>(() => FALLBACK_USERS)
 
   return {
     items

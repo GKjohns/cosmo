@@ -25,14 +25,13 @@ export const TIMEZONE_OPTIONS = [
 
 export function getAllTimezones(): { label: string, value: string }[] {
   try {
-    const timezones = (Intl as any).supportedValuesOf?.('timeZone') as string[] | undefined
+    const timezones = (Intl as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.('timeZone')
     if (!timezones) return [...TIMEZONE_OPTIONS]
     return timezones.map(tz => ({
       label: tz.replace(/_/g, ' ').replace(/\//g, ' / '),
       value: tz
     }))
-  }
-  catch {
+  } catch {
     return [...TIMEZONE_OPTIONS]
   }
 }
@@ -40,8 +39,7 @@ export function getAllTimezones(): { label: string, value: string }[] {
 export function detectBrowserTimezone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone
-  }
-  catch {
+  } catch {
     return 'UTC'
   }
 }
@@ -50,8 +48,7 @@ export function isValidTimezone(tz: string): boolean {
   try {
     Intl.DateTimeFormat(undefined, { timeZone: tz })
     return true
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -87,7 +84,6 @@ export function useTimezone() {
 
   async function saveTimezone(timezone: string): Promise<boolean> {
     if (!isValidTimezone(timezone)) {
-      // eslint-disable-next-line no-console
       console.error('[useTimezone] Invalid timezone:', timezone)
       return false
     }
@@ -100,13 +96,10 @@ export function useTimezone() {
       userTimezone.value = updatedProfile.timezone || timezone
       isSynced.value = true
       return true
-    }
-    catch (err) {
-      // eslint-disable-next-line no-console
+    } catch (err) {
       console.error('[useTimezone] Error saving timezone:', err)
       return false
-    }
-    finally {
+    } finally {
       isLoading.value = false
     }
   }
@@ -123,8 +116,7 @@ export function useTimezone() {
       if (savedTimezone && isValidTimezone(savedTimezone)) {
         userTimezone.value = savedTimezone
         isSynced.value = true
-      }
-      else if (!savedTimezone) {
+      } else if (!savedTimezone) {
         await saveTimezone(detectBrowserTimezone())
       }
     }

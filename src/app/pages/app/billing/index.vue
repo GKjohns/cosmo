@@ -98,8 +98,7 @@ async function upgradeToPro() {
   isLoading.value = true
   try {
     await startCheckout()
-  }
-  finally {
+  } finally {
     isLoading.value = false
   }
 }
@@ -108,8 +107,7 @@ async function manageBilling() {
   isLoading.value = true
   try {
     await openPortal()
-  }
-  finally {
+  } finally {
     isLoading.value = false
   }
 }
@@ -141,16 +139,15 @@ async function devSetTier() {
       icon: 'i-lucide-check-circle'
     })
     await refreshSubscription()
-  }
-  catch (err: any) {
+  } catch (caught: unknown) {
+    const err = caught as CaughtError
     toast.add({
       title: 'Failed to update tier',
       description: err?.data?.statusMessage || 'Something went wrong',
       color: 'error',
       icon: 'i-lucide-alert-circle'
     })
-  }
-  finally {
+  } finally {
     devSwitching.value = false
   }
 }
@@ -165,8 +162,7 @@ onMounted(() => {
       icon: 'i-lucide-check-circle'
     })
     navigateTo('/app/billing', { replace: true })
-  }
-  else if (route.query.canceled === 'true') {
+  } else if (route.query.canceled === 'true') {
     toast.add({
       title: 'Checkout canceled',
       description: 'No changes were made to your subscription.',
@@ -358,7 +354,9 @@ const itemsPercent = computed(() => {
         <!-- Upgrade section -->
         <template v-if="isFree">
           <div class="text-center space-y-4">
-            <h2 class="text-2xl font-bold text-highlighted">Upgrade to Pro</h2>
+            <h2 class="text-2xl font-bold text-highlighted">
+              Upgrade to Pro
+            </h2>
             <p class="text-muted max-w-lg mx-auto">
               Unlock unlimited items, generous AI usage, and priority support.
             </p>
@@ -445,7 +443,9 @@ const itemsPercent = computed(() => {
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-flask-conical" class="w-5 h-5 text-warning" />
                 <span class="font-medium text-highlighted">Tier switcher</span>
-                <UBadge color="warning" variant="subtle" size="xs">Employee</UBadge>
+                <UBadge color="warning" variant="subtle" size="xs">
+                  Employee
+                </UBadge>
               </div>
             </template>
 

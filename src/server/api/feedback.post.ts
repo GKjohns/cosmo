@@ -1,4 +1,5 @@
 import { serverSupabaseClient } from '#supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { getOptionalUser } from '../utils/auth'
 import { logAnalyticsEvent } from '../utils/analytics'
 import { isDemoMode } from '../utils/runtimeKeys'
@@ -53,9 +54,9 @@ export default defineEventHandler(async (event) => {
         : null)
   const page_context = normalizeOptionalText(body?.page_context)
 
-  // Cast to `any` so missing-type-codegen doesn't block builds when projects
-  // haven't run `supabase gen types` yet.
-  const { data, error } = await (supabase as any)
+  // Widen to the default (`any`-schema) client so a missing database.types.ts
+  // doesn't block builds when projects haven't run `supabase gen types` yet.
+  const { data, error } = await (supabase as SupabaseClient)
     .from('feedback')
     .insert({
       user_id: userId,

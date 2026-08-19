@@ -68,12 +68,10 @@ export default defineEventHandler(
       try {
         await deleteTestUserAndData(serviceClient, testUserId)
         deleted++
-      }
-      catch (e) {
+      } catch (e) {
         failed++
         console.error('[POST /api/internal/test-users/bulk-delete] Failed to delete test user', { testUserId, error: e })
-      }
-      finally {
+      } finally {
         if (sleepMs > 0) await sleep(sleepMs)
       }
     }

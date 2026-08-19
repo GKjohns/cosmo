@@ -1,6 +1,5 @@
 import { serverSupabaseClient } from '#supabase/server'
-import { isDemoMode } from '../../utils/runtimeKeys'
-import { DEMO_MEMBERSHIP_ID, DEMO_USER_ID } from '../../utils/runtimeKeys'
+import { isDemoMode, DEMO_MEMBERSHIP_ID, DEMO_USER_ID } from '../../utils/runtimeKeys'
 import { DEMO_PROFILE } from '../../utils/demoStore'
 
 /**

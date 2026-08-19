@@ -13,7 +13,7 @@ const is404 = computed(() => props.error?.statusCode === 404)
 const title = computed(() => is404.value ? 'Page not found' : 'Something went wrong')
 const description = computed(() =>
   is404.value
-    ? "The page you're looking for doesn't exist or has been moved."
+    ? 'The page you\'re looking for doesn\'t exist or has been moved.'
     : 'Something unexpected happened. Please try again.'
 )
 

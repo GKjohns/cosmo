@@ -56,7 +56,7 @@ export default defineEventHandler(async (event): Promise<TestUser[]> => {
   }
 
   const emailMap = new Map<string, string>()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   for (const u of (authUsersResult.data?.users ?? []) as Array<{ id: string, email?: string | null }>) {
     if (u.id && u.email) emailMap.set(u.id, u.email)
   }

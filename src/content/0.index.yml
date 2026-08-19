@@ -138,7 +138,7 @@ cta:
   description: Join hundreds of fleet commands already using AEGIS to coordinate their operations. Request access and deploy within 48 hours.
   links:
     - label: Request access
-      to: '/signup'
+      to: '/auth/signup'
       trailingIcon: i-lucide-arrow-right
     - label: View documentation
       to: '/docs'

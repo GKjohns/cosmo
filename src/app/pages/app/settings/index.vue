@@ -3,7 +3,7 @@ import * as z from 'zod'
 import type { FormErrorEvent, FormSubmitEvent } from '@nuxt/ui'
 
 const toast = useToast()
-const { profile, fetchProfile, updateProfile, isLoading } = useProfile()
+const { profile, fetchProfile, updateProfile } = useProfile()
 const {
   timezone,
   saveTimezone,
@@ -89,15 +89,13 @@ async function saveProfile(event: FormSubmitEvent<ProfileSchema>) {
     await fetchProfile()
     await refreshNuxtData('organization-context')
     toast.add({ title: 'Profile saved', color: 'success' })
-  }
-  catch (err) {
+  } catch (err) {
     toast.add({
       title: 'Unable to save profile',
       description: err instanceof Error ? err.message : 'Try again in a moment.',
       color: 'error'
     })
-  }
-  finally {
+  } finally {
     isSaving.value = false
   }
 }

@@ -16,53 +16,15 @@ const isDemoMode = !process.env.SUPABASE_URL
 export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
-    '@nuxt/image',
     '@nuxt/ui',
     '@nuxt/content',
     '@nuxtjs/supabase',
-    '@vueuse/nuxt',
-    'nuxt-og-image'
+    '@vueuse/nuxt'
   ],
-
-  // Cosmo owns auth routing in `app/middleware/auth.global.ts`.
-  // `redirect: false` disables the module's auto-redirect, but the helpers
-  // still consult `redirectOptions` — keep the two in sync.
-  supabase: {
-    url: supabaseUrl,
-    key: supabaseAnonKey,
-    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || DEMO_SUPABASE_ANON_KEY,
-    redirect: false,
-    redirectOptions: {
-      login: '/auth/login',
-      callback: '/auth/confirm',
-      exclude: ['/', '/pricing', '/blog/**', '/docs/**', '/changelog/**']
-    },
-    cookieOptions: {
-      maxAge: 60 * 60 * 8,
-      sameSite: 'lax',
-      secure: !import.meta.dev
-    },
-    clientOptions: {
-      auth: {
-        flowType: 'pkce',
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        persistSession: true
-      }
-    }
-  },
 
   devtools: {
     enabled: true
   },
-
-  // Default to light. Users toggle via the color-mode button.
-  colorMode: {
-    preference: 'light',
-    fallback: 'light'
-  },
-
-  css: ['~/assets/css/main.css'],
 
   /*
    * Head meta — placeholders templated as {{TITLE}} / {{DESCRIPTION}} / {{URL}}.
@@ -136,6 +98,14 @@ export default defineNuxtConfig({
     }
   },
 
+  css: ['~/assets/css/main.css'],
+
+  // Default to light. Users toggle via the color-mode button.
+  colorMode: {
+    preference: 'light',
+    fallback: 'light'
+  },
+
   runtimeConfig: {
     openaiApiKey: process.env.OPENAI_API_KEY,
     aiGatewayApiKey: process.env.AI_GATEWAY_API_KEY,
@@ -168,13 +138,6 @@ export default defineNuxtConfig({
     }
   },
 
-  routeRules: {
-    '/docs': { redirect: '/docs/getting-started', prerender: false },
-    '/api/**': { cors: true }
-  },
-
-  compatibilityDate: '2024-07-11',
-
   // Ensure Supabase modules are transpiled correctly for ESM / prerender.
   build: {
     transpile: [
@@ -187,11 +150,19 @@ export default defineNuxtConfig({
     ]
   },
 
+  routeRules: {
+    '/docs': { redirect: '/docs/getting-started' },
+    '/api/**': { cors: true }
+  },
+
+  compatibilityDate: '2026-06-30',
+
+  // No prerendering by default: `/` must be SSR (a CDN-cached anon landing +
+  // client redirect breaks hydration for logged-in users) and the crawler turns
+  // every dead link into a build failure. Opt into prerender per route with
+  // `routeRules: { '/blog/**': { prerender: true } }` + `nitro.prerender.routes`
+  // if a project wants static content pages.
   nitro: {
-    prerender: {
-      routes: ['/'],
-      crawlLinks: true
-    },
     // Bundle tslib helpers with the server for Vercel runtime.
     externals: {
       inline: ['tslib']
@@ -211,6 +182,37 @@ export default defineNuxtConfig({
       stylistic: {
         commaDangle: 'never',
         braceStyle: '1tbs'
+      }
+    }
+  },
+
+  // Cosmo owns auth routing in `app/middleware/auth.global.ts`.
+  // `redirect: false` disables the module's auto-redirect, but the helpers
+  // still consult `redirectOptions` — keep the two in sync.
+  supabase: {
+    url: supabaseUrl,
+    key: supabaseAnonKey,
+    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || DEMO_SUPABASE_ANON_KEY,
+    redirect: false,
+    // No `database.types.ts` in a template — clones generate one and point
+    // `types` at it (see project_bootstrap.md).
+    types: false,
+    redirectOptions: {
+      login: '/auth/login',
+      callback: '/auth/confirm',
+      exclude: ['/', '/pricing', '/blog/**', '/docs/**', '/changelog/**']
+    },
+    cookieOptions: {
+      maxAge: 60 * 60 * 8,
+      sameSite: 'lax',
+      secure: !import.meta.dev
+    },
+    clientOptions: {
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        persistSession: true
       }
     }
   }

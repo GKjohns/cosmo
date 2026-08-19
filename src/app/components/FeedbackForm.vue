@@ -145,15 +145,14 @@ async function submit() {
       },
       { context: { pageContext: pageContext.value } }
     )
-  }
-  catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught as CaughtError
     toast.add({
       title: 'Failed to submit feedback',
       description: error?.data?.message || error?.data?.statusMessage || 'Please try again.',
       color: 'error'
     })
-  }
-  finally {
+  } finally {
     loading.value = false
   }
 }

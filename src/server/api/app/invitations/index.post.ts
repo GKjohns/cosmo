@@ -35,8 +35,7 @@ export default defineEventHandler(async (event) => {
     const { data: page } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 })
     const match = (page?.users ?? []).find(u => u.email?.toLowerCase() === email)
     existingUserId = match?.id ?? null
-  }
-  catch {
+  } catch {
     // Best-effort; fall through to invitation creation.
     existingUserId = null
   }

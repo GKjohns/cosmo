@@ -101,17 +101,18 @@ const fetchStats = async () => {
     stats.value = await $fetch<AdminStatsResponse>('/api/admin/stats', {
       query: includeTestUsers.value ? { includeTestUsers: '1' } : undefined
     })
-  }
-  catch (e: any) {
+  } catch (caught: unknown) {
+    const e = caught as CaughtError
     error.value = e?.data?.statusMessage ?? e?.message ?? 'Failed to load stats'
-  }
-  finally {
+  } finally {
     isLoading.value = false
   }
 }
 
 onMounted(fetchStats)
-watch(includeTestUsers, () => { void fetchStats() })
+watch(includeTestUsers, () => {
+  void fetchStats()
+})
 
 const formatRelativeTime = (dateStr: string): string => {
   const date = new Date(dateStr)
@@ -237,7 +238,9 @@ const headlineCards = computed(() => {
                     <span class="text-xs text-muted">{{ card.label }}</span>
                   </div>
                   <div class="h-9 w-16 bg-default/60 rounded animate-pulse mt-1" />
-                  <p class="text-xs text-muted mt-1">{{ card.description }}</p>
+                  <p class="text-xs text-muted mt-1">
+                    {{ card.description }}
+                  </p>
                 </div>
               </div>
             </section>
@@ -246,8 +249,15 @@ const headlineCards = computed(() => {
           <!-- Error -->
           <div v-else-if="error" class="text-center py-12">
             <UIcon name="i-lucide-alert-circle" class="size-12 mx-auto mb-4 text-error" />
-            <p class="text-error font-medium">{{ error }}</p>
-            <UButton class="mt-4" color="primary" variant="soft" @click="fetchStats">
+            <p class="text-error font-medium">
+              {{ error }}
+            </p>
+            <UButton
+              class="mt-4"
+              color="primary"
+              variant="soft"
+              @click="fetchStats"
+            >
               Try Again
             </UButton>
           </div>
@@ -302,11 +312,21 @@ const headlineCards = computed(() => {
                 <table v-else class="w-full text-sm">
                   <thead>
                     <tr class="border-b border-default bg-elevated/30">
-                      <th class="text-left py-3 px-4 text-muted font-medium">User</th>
-                      <th class="text-left py-3 px-4 text-muted font-medium">Signed Up</th>
-                      <th class="text-center py-3 px-4 text-muted font-medium">Items</th>
-                      <th class="text-center py-3 px-4 text-muted font-medium">Events</th>
-                      <th class="text-center py-3 px-4 text-muted font-medium">Status</th>
+                      <th class="text-left py-3 px-4 text-muted font-medium">
+                        User
+                      </th>
+                      <th class="text-left py-3 px-4 text-muted font-medium">
+                        Signed Up
+                      </th>
+                      <th class="text-center py-3 px-4 text-muted font-medium">
+                        Items
+                      </th>
+                      <th class="text-center py-3 px-4 text-muted font-medium">
+                        Events
+                      </th>
+                      <th class="text-center py-3 px-4 text-muted font-medium">
+                        Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -318,12 +338,21 @@ const headlineCards = computed(() => {
                       <td class="py-3 px-4">
                         <div>
                           <div class="flex items-center gap-2">
-                            <p class="font-medium text-highlighted">{{ user.displayName || 'No name' }}</p>
-                            <UBadge v-if="user.isTestUser" color="warning" variant="subtle" size="xs">
+                            <p class="font-medium text-highlighted">
+                              {{ user.displayName || 'No name' }}
+                            </p>
+                            <UBadge
+                              v-if="user.isTestUser"
+                              color="warning"
+                              variant="subtle"
+                              size="xs"
+                            >
                               Test
                             </UBadge>
                           </div>
-                          <p class="text-xs text-muted">{{ user.email || user.id }}</p>
+                          <p class="text-xs text-muted">
+                            {{ user.email || user.id }}
+                          </p>
                         </div>
                       </td>
                       <td class="py-3 px-4 text-muted">
@@ -413,7 +442,9 @@ const headlineCards = computed(() => {
                 <h2 class="text-lg font-semibold text-highlighted">
                   Feedback
                 </h2>
-                <UBadge color="primary" variant="subtle" size="xs">{{ stats.feedback.length }}</UBadge>
+                <UBadge color="primary" variant="subtle" size="xs">
+                  {{ stats.feedback.length }}
+                </UBadge>
               </div>
               <div class="space-y-4">
                 <div
@@ -433,7 +464,12 @@ const headlineCards = computed(() => {
                         </p>
                       </div>
                     </div>
-                    <UBadge v-if="fb.pageContext" color="neutral" variant="subtle" size="xs">
+                    <UBadge
+                      v-if="fb.pageContext"
+                      color="neutral"
+                      variant="subtle"
+                      size="xs"
+                    >
                       {{ fb.pageContext }}
                     </UBadge>
                   </div>
@@ -442,19 +478,25 @@ const headlineCards = computed(() => {
                       <p class="text-xs text-muted uppercase tracking-wide mb-1">
                         What they were trying to do
                       </p>
-                      <p class="text-highlighted">{{ fb.q1TryingToDo }}</p>
+                      <p class="text-highlighted">
+                        {{ fb.q1TryingToDo }}
+                      </p>
                     </div>
                     <div v-if="fb.q2Blockers">
                       <p class="text-xs text-muted uppercase tracking-wide mb-1">
                         What blocked them
                       </p>
-                      <p class="text-highlighted">{{ fb.q2Blockers }}</p>
+                      <p class="text-highlighted">
+                        {{ fb.q2Blockers }}
+                      </p>
                     </div>
                     <div v-if="fb.q3Indispensable">
                       <p class="text-xs text-muted uppercase tracking-wide mb-1">
                         What would make this indispensable
                       </p>
-                      <p class="text-highlighted">{{ fb.q3Indispensable }}</p>
+                      <p class="text-highlighted">
+                        {{ fb.q3Indispensable }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -469,7 +511,9 @@ const headlineCards = computed(() => {
               </div>
               <div class="bg-elevated/50 rounded-lg border border-dashed border-default p-8 text-center">
                 <UIcon name="i-lucide-inbox" class="size-8 mx-auto mb-2 text-muted" />
-                <p class="text-muted">No feedback yet</p>
+                <p class="text-muted">
+                  No feedback yet
+                </p>
               </div>
             </section>
 
@@ -508,7 +552,9 @@ const headlineCards = computed(() => {
                 <div class="bg-elevated/50 rounded-lg border border-default overflow-hidden max-h-96 overflow-y-auto">
                   <div v-if="stats.errors.length === 0" class="p-8 text-center">
                     <UIcon name="i-lucide-check-circle" class="size-8 mx-auto mb-2 text-success" />
-                    <p class="text-success font-medium">No errors</p>
+                    <p class="text-success font-medium">
+                      No errors
+                    </p>
                     <p class="text-xs text-muted mt-1">
                       Either no bugs hit yet or no one's used it enough
                     </p>
@@ -552,8 +598,12 @@ const headlineCards = computed(() => {
                     <table class="w-full text-sm">
                       <thead>
                         <tr class="border-b border-default">
-                          <th class="text-left py-2 px-4 text-muted font-medium">Event</th>
-                          <th class="text-right py-2 px-4 text-muted font-medium">Count</th>
+                          <th class="text-left py-2 px-4 text-muted font-medium">
+                            Event
+                          </th>
+                          <th class="text-right py-2 px-4 text-muted font-medium">
+                            Count
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -567,8 +617,12 @@ const headlineCards = computed(() => {
                           :key="evt.eventType"
                           class="border-b border-default last:border-b-0"
                         >
-                          <td class="py-2 px-4 font-mono text-xs">{{ evt.eventType }}</td>
-                          <td class="py-2 px-4 text-right text-muted">{{ evt.count }}</td>
+                          <td class="py-2 px-4 font-mono text-xs">
+                            {{ evt.eventType }}
+                          </td>
+                          <td class="py-2 px-4 text-right text-muted">
+                            {{ evt.count }}
+                          </td>
                         </tr>
                       </tbody>
                     </table>
