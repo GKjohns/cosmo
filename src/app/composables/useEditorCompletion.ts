@@ -10,10 +10,6 @@ interface UseEditorCompletionOptions {
 }
 
 export function useEditorCompletion(editorRef: Ref<{ editor: Editor | undefined } | null | undefined>, options: UseEditorCompletionOptions = {}) {
-  // CSRF protection (stub — add nuxt-csurf if needed)
-  const csrf = ''
-  const headerName = 'x-csrf-token'
-
   // State for direct insertion/transform mode
   const insertState = ref<{
     pos: number
@@ -31,7 +27,6 @@ export function useEditorCompletion(editorRef: Ref<{ editor: Editor | undefined 
   const { completion, complete, isLoading, stop, setCompletion } = useCompletion({
     api: options.api || '/api/completion',
     streamProtocol: 'text',
-    headers: { [headerName]: csrf },
     body: computed(() => ({
       mode: mode.value,
       language: language.value

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 /**
- * Chat empty state — Sprint 6.
- *
- * Mirrors `nuxt-ui-templates/chat`'s `app/pages/index.vue`. On submit:
+ * Chat empty state — mirrors nuxt-ui-templates/chat as of Aug 2026 (ai@7,
+ * useChat, Comark); this page is the `app/pages/index.vue` half. On submit:
  *   1. await POST /api/chats with the user's first message
  *   2. server persists the chat row + first user message + returns { id }
  *   3. await navigateTo('/app/chat/<id>')
@@ -43,12 +42,6 @@ const quickChats = [
   { label: 'Explain a hard concept', icon: 'i-lucide-graduation-cap' }
 ]
 
-// CSRF stub — see `~/claude-ops/conventions/nuxt_ui_chat.md`. Cosmo doesn't
-// ship `nuxt-csurf` by default, but the headers shape is in place for
-// projects that wire it up later.
-const csrf = ''
-const csrfHeader = 'x-csrf-token'
-
 async function createChat(prompt: string) {
   if (loading.value) return
   const trimmed = prompt.trim()
@@ -60,7 +53,6 @@ async function createChat(prompt: string) {
   try {
     const chat = await $fetch<{ id: string, title: string }>('/api/chats', {
       method: 'POST',
-      headers: { [csrfHeader]: csrf },
       body: {
         id: crypto.randomUUID(),
         message: {

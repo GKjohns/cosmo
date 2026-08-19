@@ -9,7 +9,7 @@ Cosmo — Nuxt 4 + Supabase + Inngest starter. Clone it to bootstrap a new Monum
 - **Styling:** Tailwind CSS 4
 - **Content:** [Nuxt Content](https://content.nuxt.com)
 - **Editor:** TipTap
-- **AI:** Vercel AI SDK + OpenAI
+- **AI:** Vercel AI SDK (ai@7) via the Vercel AI Gateway
 - **Database / Auth:** Supabase (`@nuxtjs/supabase`)
 - **Job queue:** Inngest
 
@@ -49,8 +49,8 @@ npm run dev
 ```
 
 The chat endpoints and editor inline AI start streaming through the gateway
-without any other config. (Setting `OPENAI_API_KEY` instead also works —
-cosmo falls back to the OpenAI provider when the gateway key is missing.)
+without any other config. There is no direct-provider fallback — the
+gateway key is the only AI credential cosmo reads.
 
 ### Turning on Supabase
 
@@ -73,7 +73,7 @@ When you clone cosmo into a new project:
 
 ## Conventions
 
-Patterns live in `~/claude-ops/conventions/`. See `CLAUDE.md` for the canonical pointers (chat, AI SDK, OpenAI, project bootstrap).
+Patterns live in `~/claude-ops/conventions/`. See `CLAUDE.md` for the canonical pointers (chat, AI SDK, project bootstrap).
 
 ## License
 

@@ -1,18 +1,18 @@
 /**
- * Inngest function: generate-digest — System 2 (OpenAI Responses API).
+ * Inngest function: generate-digest — structured extraction via the AI SDK
+ * (`generateText` + `Output.object`, gateway-only, `MODELS.fast`).
  * Daily cron (8am UTC) or on-demand. Synthesizes recent activity into a digest.
  */
+import { generateText, Output } from 'ai'
+import { z } from 'zod'
 
-const digestSchema = {
-  type: 'object',
-  properties: {
-    summary: { type: 'string' },
-    highlights: { type: 'array', items: { type: 'string' } },
-    open_blockers: { type: 'array', items: { type: 'string' } }
-  },
-  required: ['summary', 'highlights', 'open_blockers'],
-  additionalProperties: false
-} as const
+const digestSchema = z.object({
+  summary: z.string(),
+  highlights: z.array(z.string()),
+  open_blockers: z.array(z.string())
+})
+
+type Digest = z.infer<typeof digestSchema>
 
 export const generateDigest = inngest.createFunction(
   {
@@ -36,7 +36,7 @@ export const generateDigest = inngest.createFunction(
           return (data ?? []).map((o: { id: string }) => o.id)
         })
 
-    const results: { organizationId: string, digest: unknown }[] = []
+    const results: { organizationId: string, digest: Digest }[] = []
 
     for (const orgId of organizationIds) {
       const digest = await step.run(`digest-${orgId}`, async () => {
@@ -55,18 +55,16 @@ export const generateDigest = inngest.createFunction(
           return { summary: 'No significant activity in the last 24 hours.', highlights: [], open_blockers: [] }
         }
 
-        const openai = serverOpenAI()
-        const response = await openai.responses.create({
-          model: 'gpt-5-nano',
+        const { output } = await generateText({
+          model: MODELS.fast,
+          output: Output.object({ schema: digestSchema }),
+          reasoning: 'low',
           instructions: 'Synthesize recent work activity into a daily digest with summary, highlights, and open blockers.',
-          input: JSON.stringify({ recentActivity: recentItems ?? [], openHighPriority: openHighPriority ?? [] }),
-          reasoning: { effort: 'low' },
-          max_output_tokens: 4000,
-          store: false,
-          text: { format: { type: 'json_schema', name: 'daily_digest', strict: true, schema: digestSchema } }
+          prompt: JSON.stringify({ recentActivity: recentItems ?? [], openHighPriority: openHighPriority ?? [] })
         })
 
-        return JSON.parse(response.output_text)
+        if (!output) throw new Error('Digest generation returned empty response.')
+        return output as Digest
       })
 
       results.push({ organizationId: orgId, digest })

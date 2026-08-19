@@ -1,16 +1,17 @@
 <script setup lang="ts">
 /**
- * Live chat page — Sprint 6.
+ * Live chat page — mirrors nuxt-ui-templates/chat as of Aug 2026 (ai@7,
+ * useChat, Comark). Hydrates `useChat()` from the server-fetched messages
+ * and auto-triggers the first assistant turn when the chat was just created
+ * (`messages.length === 1 && last.role === 'user'`).
  *
- * Mirrors `nuxt-ui-templates/chat`'s `app/pages/chat/[id].vue` and
- * cross-references AIR-Bot's. Hydrates the AI SDK `Chat` from the
- * server-fetched messages and auto-triggers the first assistant turn when
- * the chat was just created (`messages.length === 1 && last.role === 'user'`).
+ * The server emits a transient `data-chat-title` part before streaming when
+ * the chat had no title; `onData` refreshes the sidebar list on it.
  *
  * The same `[view-transition-name:chat-prompt]` class on the input keeps
  * the prompt locked in place during the empty-state → uuid navigation.
  */
-import { Chat } from '@ai-sdk/vue'
+import { useChat } from '@ai-sdk/vue'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
 import type { FetchError } from 'ofetch'
@@ -31,12 +32,6 @@ interface StoredChat {
   updatedAt: string
 }
 
-// CSRF stub — see `~/claude-ops/conventions/nuxt_ui_chat.md`. Cosmo doesn't
-// ship `nuxt-csurf` by default; the header is wired so projects that add
-// the module Just Work without touching the page.
-const csrf = ''
-const csrfHeader = 'x-csrf-token'
-
 const { data, error: fetchError } = await useFetch<StoredChat>(`/api/chats/${route.params.id}`, {
   key: `chat-${route.params.id}`
 })
@@ -49,18 +44,24 @@ if (fetchError.value || !data.value) {
   })
 }
 
-const title = computed(() => data.value?.title?.trim() || 'New chat')
+const title = ref(data.value.title?.trim() || 'New chat')
 
 const followUpInput = ref('')
 const hasAutoStarted = ref(false)
 
-const chat = new Chat<UIMessage>({
+const { messages, status, error, sendMessage, regenerate, stop } = useChat<UIMessage>({
   id: data.value.id,
   messages: data.value.messages,
   transport: new DefaultChatTransport({
-    api: `/api/chats/${data.value.id}`,
-    headers: { [csrfHeader]: csrf }
+    api: `/api/chats/${data.value.id}`
   }),
+  onData: (part) => {
+    if (part.type === 'data-chat-title') {
+      const next = (part.data as { title?: string } | undefined)?.title
+      if (next) title.value = next
+      void refreshNuxtData('chats')
+    }
+  },
   onError: (err: Error) => {
     let description = err.message
     if (typeof description === 'string' && description.startsWith('{')) {
@@ -71,24 +72,20 @@ const chat = new Chat<UIMessage>({
       }
     }
     toast.add({ title: 'Chat error', description, color: 'error', icon: 'i-lucide-alert-circle' })
-  },
-  onFinish: () => {
-    void refreshNuxtData('chats')
   }
 })
 
-const messageStatus = computed(() => chat.status)
-const isBusy = computed(() => messageStatus.value === 'submitted' || messageStatus.value === 'streaming')
+const isBusy = computed(() => status.value === 'submitted' || status.value === 'streaming')
 
 // Auto-start: when the empty-state navigated us here with a single pending
 // user message, kick off the assistant turn.
 onMounted(() => {
   if (hasAutoStarted.value) return
-  if (chat.messages.length !== 1) return
-  if (chat.messages[0]?.role !== 'user') return
+  if (messages.value.length !== 1) return
+  if (messages.value[0]?.role !== 'user') return
 
   hasAutoStarted.value = true
-  void chat.regenerate()
+  void regenerate()
 })
 
 function copyMessage(_event: MouseEvent, message: UIMessage) {
@@ -101,12 +98,12 @@ function copyMessage(_event: MouseEvent, message: UIMessage) {
 }
 
 function stopStreaming() {
-  chat.stop()
+  void stop()
 }
 
 async function regenerateLastResponse() {
   try {
-    await chat.regenerate()
+    await regenerate()
   } catch (err) {
     toast.add({
       title: 'Regenerate failed',
@@ -122,7 +119,7 @@ async function handleSubmit() {
 
   followUpInput.value = ''
   try {
-    await chat.sendMessage({ text })
+    await sendMessage({ text })
   } catch (err) {
     followUpInput.value = text
     toast.add({
@@ -167,8 +164,8 @@ async function handleSubmit() {
       <UContainer class="flex-1 flex flex-col gap-4 sm:gap-6 max-w-3xl mx-auto w-full">
         <UChatMessages
           should-auto-scroll
-          :messages="chat.messages"
-          :status="messageStatus"
+          :messages="messages"
+          :status="status"
           :assistant="{
             actions: [{
               label: copied ? 'Copied' : 'Copy',
@@ -185,15 +182,15 @@ async function handleSubmit() {
           <template #content="{ message }">
             <ChatMessageContent
               :message="message"
-              :collapsed="messageStatus === 'ready'"
+              :collapsed="status === 'ready'"
             />
           </template>
         </UChatMessages>
 
         <UChatPrompt
           v-model="followUpInput"
-          :status="messageStatus"
-          :error="chat.error"
+          :status="status"
+          :error="error"
           :disabled="isBusy"
           variant="subtle"
           placeholder="Reply with a follow-up or refinement..."
@@ -204,7 +201,7 @@ async function handleSubmit() {
           <template #footer>
             <div class="flex items-center gap-1">
               <UButton
-                v-if="!isBusy && chat.messages.length > 1"
+                v-if="!isBusy && messages.length > 1"
                 icon="i-lucide-refresh-cw"
                 label="Regenerate"
                 color="neutral"
@@ -215,7 +212,7 @@ async function handleSubmit() {
             </div>
 
             <UChatPromptSubmit
-              :status="messageStatus"
+              :status="status"
               color="neutral"
               size="sm"
               @stop="stopStreaming"

@@ -1,52 +1,55 @@
 /**
  * POST /api/chats/[id]
  *
- * Streaming chat turn for Sprint 6. The AI SDK's `Chat` (`@ai-sdk/vue` v3)
- * sends the full message history here on every turn; we stream the
- * assistant response back via `createUIMessageStream` and persist new
- * messages on `onFinish`.
+ * Streaming chat turn. Mirrors nuxt-ui-templates/chat as of Aug 2026 (ai@7,
+ * useChat, Comark). `useChat` / `DefaultChatTransport` send the full message
+ * history on every turn (`{ id, messages, trigger?, messageId?, model? }`);
+ * we stream the assistant response back via `createUIMessageStream` and
+ * persist new messages on `onEnd`.
  *
- * Persistence detail (load-bearing): we **id-diff** existing vs. new
- * messages and only append unseen ones. The AI SDK can re-emit existing
- * parts during streaming, so a full overwrite duplicates messages.
+ * Order of operations (load-bearing):
+ *   1. validate body, load + authorize the chat (demo store or Supabase)
+ *   2. no title yet -> generate one BEFORE streaming, persist it, and emit a
+ *      transient `data-chat-title` part so the sidebar updates mid-stream
+ *   3. stream with `toUIMessageStream({ stream: result.stream })`
+ *   4. `onEnd` -> `persistChatMessages` id-diffs against the stored jsonb
+ *      (the SDK can re-emit existing parts; a full overwrite duplicates them)
  *
- * Models source from `MODELS` registry (`server/utils/aiModels.ts`):
- * - `default-chat` for the streaming response
- * - `title-gen` for post-stream title generation
- *
- * Mirrors the shape of nuxt-ui-templates/chat's `[id].post.ts` while using
- * AIR-Bot's id-diff persistence (the template re-uses Drizzle's
- * `onConflictDoNothing` for the same effect; cosmo doesn't have Drizzle).
+ * Models come from `MODELS` (`server/utils/aiModels.ts`): `chat` for the
+ * stream, `titleGen` for the title. Gateway-only — with no
+ * `AI_GATEWAY_API_KEY` the route streams a canned "add the key" reply so the
+ * demo never 500s.
  */
 import type { UIMessage } from 'ai'
 import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
-  generateText,
+  isStepCount,
   smoothStream,
-  stepCountIs,
-  streamText
+  streamText,
+  toUIMessageStream
 } from 'ai'
-import { createOpenAI } from '@ai-sdk/openai'
+import { z } from 'zod'
 import { serverSupabaseClient } from '#supabase/server'
-import { extractTextFromParts, normalizeMessages, serializeMessages } from '../../utils/chats'
+import type { ChatBackend } from '../../utils/chats'
+import { generateChatTitle, normalizeMessages, persistChatMessages, persistChatTitle } from '../../utils/chats'
 import { createAITools } from '../../utils/ai-tools'
 import { serverSupabaseAdmin } from '../../utils/supabase'
-import { isDemoMode } from '../../utils/runtimeKeys'
-import { appendDemoChatMessages, getDemoChat, setDemoChatTitle } from '../../utils/demoStore'
+import { isAIConfigured, isDemoMode } from '../../utils/runtimeKeys'
+import { getDemoChat } from '../../utils/demoStore'
+import { isRegisteredModel } from '../../utils/aiModels'
 
-interface ChatRequestBody {
-  messages?: UIMessage[]
-  model?: string
-}
+const bodySchema = z.object({
+  id: z.string().optional(),
+  messages: z.array(z.custom<UIMessage>()).min(1),
+  trigger: z.string().optional(),
+  messageId: z.string().optional(),
+  model: z.string().refine(isRegisteredModel, { message: 'Invalid model' }).optional()
+})
 
-const REASONING_MODELS = new Set<string>([
-  'openai/gpt-5-mini',
-  'openai/gpt-5',
-  'openai/gpt-5.4',
-  'openai/gpt-5.4-mini'
-])
+const NO_KEY_REPLY = 'AI replies are off in this demo. Add `AI_GATEWAY_API_KEY` to `src/.env` '
+  + '(Vercel AI Gateway) and restart the dev server to enable them.'
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -54,32 +57,30 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Chat id is required.' })
   }
 
-  const body = await readBody<ChatRequestBody>(event)
-  const submittedMessages = normalizeMessages(body?.messages)
-  if (submittedMessages.length === 0) {
+  const body = await readValidatedBody(event, bodySchema.parse)
+  const messages = normalizeMessages(body.messages)
+  if (messages.length === 0) {
     throw createError({ statusCode: 400, statusMessage: 'Messages are required.' })
   }
 
-  const demo = isDemoMode(event)
-
-  // Verify chat exists. Real path consults Supabase; demo path the in-memory store.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let supabase: any = null
+  // Load + authorize. Demo path consults the in-memory store; live path Supabase.
+  const backend: ChatBackend = { demo: isDemoMode(event) }
+  let hasTitle: boolean
   let userId: string | null = null
 
-  if (demo) {
+  if (backend.demo) {
     const existing = getDemoChat(id)
     if (!existing) {
       throw createError({ statusCode: 404, statusMessage: 'Chat not found.' })
     }
+    hasTitle = Boolean(existing.title)
   } else {
-    supabase = await serverSupabaseClient(event)
-    userId = await requireUserId(event, supabase)
+    backend.supabase = await serverSupabaseClient(event)
+    userId = await requireUserId(event, backend.supabase)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existingChat, error: loadError } = await (supabase as any)
+    const { data: existingChat, error: loadError } = await backend.supabase
       .from('chats')
-      .select('id, user_id, org_id, title, messages')
+      .select('id, user_id, title')
       .eq('id', id)
       .maybeSingle()
 
@@ -93,44 +94,40 @@ export default defineEventHandler(async (event) => {
     if (existingChat.user_id !== userId) {
       throw createError({ statusCode: 403, statusMessage: 'You do not own this chat.' })
     }
+    hasTitle = Boolean(existingChat.title)
   }
 
-  const runtimeConfig = useRuntimeConfig(event)
-  const hasGateway = !!(runtimeConfig.aiGatewayApiKey || process.env.AI_GATEWAY_API_KEY)
-  if (!hasGateway && !runtimeConfig.openaiApiKey) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'No AI provider configured (OPENAI_API_KEY or AI_GATEWAY_API_KEY).'
+  // Demo short-circuit: no gateway key -> canned reply, still a valid UI stream.
+  if (!isAIConfigured(event)) {
+    const stream = createUIMessageStream({
+      originalMessages: messages,
+      execute: ({ writer }) => {
+        const partId = crypto.randomUUID()
+        writer.write({ type: 'text-start', id: partId })
+        writer.write({ type: 'text-delta', id: partId, delta: NO_KEY_REPLY })
+        writer.write({ type: 'text-end', id: partId })
+      },
+      onEnd: ({ messages: responseMessages }) => persistChatMessages(backend, id, responseMessages)
     })
+    return createUIMessageStreamResponse({ stream })
   }
 
-  // Allow the client to override the registry default with a registered id.
-  const requestedModel = body?.model
-    && Object.values(MODELS).includes(body.model as typeof MODELS[keyof typeof MODELS])
-    ? body.model
-    : MODELS['default-chat']
+  const model = body.model ?? MODELS.chat
 
-  const titleModelId = MODELS['title-gen']
-
-  // When the gateway is active, AI SDK v6 picks up the model id directly.
-  // Otherwise, strip the `openai/` prefix and call the OpenAI provider.
-  const openai = hasGateway ? null : createOpenAI({ apiKey: runtimeConfig.openaiApiKey as string })
-
-  const model = hasGateway
-    ? requestedModel
-    : openai!(requestedModel.replace(/^openai\//, ''))
-
-  const titleModel = hasGateway
-    ? titleModelId
-    : openai!(titleModelId.replace(/^openai\//, ''))
+  // Title first, so the sidebar can update while the answer streams.
+  let title = ''
+  if (!hasTitle) {
+    title = await generateChatTitle(messages[0]!)
+    if (title) await persistChatTitle(backend, id, title)
+  }
 
   // Tools — wired to the user's active org so list_items / get_dashboard_stats
   // see the right slice. Demo mode has no live tables to query, so we skip
   // tool wiring entirely.
   let tools: ReturnType<typeof createAITools> | undefined
-  if (!demo && supabase && userId) {
+  if (!backend.demo && userId) {
     try {
-      const membership = await requireActiveOrg(event, supabase, userId)
+      const membership = await requireActiveOrg(event, backend.supabase, userId)
       tools = createAITools({
         supabase: serverSupabaseAdmin(),
         organizationId: membership.organizationId
@@ -141,12 +138,17 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Stop the model call when the client disconnects (stop button / tab close).
+  const abortController = new AbortController()
+  event.node.res.on('close', () => abortController.abort())
+
   const stream = createUIMessageStream({
-    originalMessages: submittedMessages,
+    originalMessages: messages,
     execute: async ({ writer }) => {
       const result = streamText({
+        abortSignal: abortController.signal,
         model,
-        system: buildAISystemPrompt({
+        instructions: buildAISystemPrompt({
           currentUser: {
             name: null,
             title: null,
@@ -154,120 +156,25 @@ export default defineEventHandler(async (event) => {
             organizationRole: null
           }
         }),
-        messages: await convertToModelMessages(submittedMessages),
+        messages: await convertToModelMessages(messages),
         ...(tools && { tools }),
-        stopWhen: stepCountIs(5),
+        reasoning: 'low',
+        stopWhen: isStepCount(10),
         experimental_transform: smoothStream(),
-        ...(REASONING_MODELS.has(requestedModel) && {
-          providerOptions: {
-            openai: {
-              reasoningEffort: 'low' as const,
-              reasoningSummary: 'auto' as const
-            }
-          }
-        })
+        onAbort: () => console.info(`[POST /api/chats/${id}] Stream aborted by client`)
       })
 
-      writer.merge(result.toUIMessageStream({
+      if (title) {
+        writer.write({ type: 'data-chat-title', data: { title }, transient: true })
+      }
+
+      writer.merge(toUIMessageStream({
+        stream: result.stream,
         sendReasoning: true,
         sendSources: true
       }))
     },
-    onFinish: async ({ messages: responseMessages }) => {
-      // Demo path: persist into the in-memory store + maybe generate a title.
-      if (demo) {
-        const latest = getDemoChat(id)
-        if (!latest) return
-
-        const existingIds = new Set<string>(latest.messages.map(m => m.id))
-        const newMessages = responseMessages.filter(m => !existingIds.has(m.id))
-        if (newMessages.length === 0) return
-
-        appendDemoChatMessages(id, newMessages)
-        const updated = getDemoChat(id)
-        if (!updated) return
-
-        if (latest.title || !updated.messages.some(m => m.role === 'assistant')) return
-
-        const firstUserMessage = updated.messages.find(m => m.role === 'user')
-        const firstUserText = firstUserMessage ? extractTextFromParts(firstUserMessage.parts) : ''
-        if (!firstUserText) return
-
-        try {
-          const { text } = await generateText({
-            model: titleModel,
-            system: 'Generate a short chat title under 30 characters. Return plain text only with no quotes or punctuation beyond normal words.',
-            prompt: firstUserText
-          })
-          const title = text.trim().slice(0, 30)
-          if (title) setDemoChatTitle(id, title)
-        } catch (err) {
-          console.error(`[POST /api/chats/${id}] Title generation failed`, err)
-        }
-        return
-      }
-
-      // Live path — Supabase-backed persistence.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: latest } = await (supabase as any)
-        .from('chats')
-        .select('id, title, messages')
-        .eq('id', id)
-        .maybeSingle()
-
-      if (!latest) return
-
-      const existingIds = new Set<string>(
-        normalizeMessages(latest.messages).map(m => m.id)
-      )
-      const newMessages = responseMessages.filter(m => !existingIds.has(m.id))
-      if (newMessages.length === 0) return
-
-      const updatedMessages = [...normalizeMessages(latest.messages), ...newMessages]
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateError } = await (supabase as any)
-        .from('chats')
-        .update({
-          messages: serializeMessages(updatedMessages),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-
-      if (updateError) {
-        console.error(`[POST /api/chats/${id}] Failed to persist messages`, updateError)
-        return
-      }
-
-      // Title generation — once, after the first assistant turn.
-      if (latest.title || !updatedMessages.some(m => m.role === 'assistant')) return
-
-      const firstUserMessage = updatedMessages.find(m => m.role === 'user')
-      const firstUserText = firstUserMessage ? extractTextFromParts(firstUserMessage.parts) : ''
-      if (!firstUserText) return
-
-      try {
-        const { text } = await generateText({
-          model: titleModel,
-          system: 'Generate a short chat title under 30 characters. Return plain text only with no quotes or punctuation beyond normal words.',
-          prompt: firstUserText
-        })
-        const title = text.trim().slice(0, 30)
-        if (!title) return
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: titleError } = await (supabase as any)
-          .from('chats')
-          .update({ title })
-          .eq('id', id)
-
-        if (titleError) {
-          console.error(`[POST /api/chats/${id}] Failed to persist title`, titleError)
-        }
-      } catch (err) {
-        console.error(`[POST /api/chats/${id}] Title generation failed`, err)
-      }
-    },
+    onEnd: ({ messages: responseMessages }) => persistChatMessages(backend, id, responseMessages),
     onError: error => error instanceof Error ? error.message : 'Failed to stream AI response.'
   })
 

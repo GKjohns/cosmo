@@ -1,16 +1,15 @@
 <script setup lang="ts">
 /**
- * Chat message parts renderer — Sprint 6.
- *
- * Ported from AIR-Bot's `app/components/chat/MessageContent.vue` (the more
- * battle-tested parts renderer) and cross-referenced against
- * `nuxt-ui-templates/chat`'s `app/components/chat/message/MessageContent.vue`.
+ * Chat message parts renderer — mirrors nuxt-ui-templates/chat as of Aug 2026
+ * (ai@7, useChat, Comark), keeping AIR-Bot's per-tool `UChatTool` switch.
  *
  * Responsibilities:
- * - skip non-renderable parts (`step-start`, `source-url`)
- * - reasoning → `UChatReasoning`
+ * - `getMergedParts` folds `source-url` parts into inline `:source-link{}`
+ *   and merges adjacent text parts (`app/utils/ai.ts`)
+ * - reasoning → `UChatReasoning` (Comark inside)
  * - tools → `UChatTool` with per-tool icon/label switch
- * - text → `UEditor` (read-only markdown) for assistant, plain text for user
+ * - text → `ChatComark` (streaming markdown + shiki) for assistant, plain
+ *   text for user
  *
  * TODO: project-specific tool registration. Add per-tool cases below as
  * tools are added in `server/utils/ai-tools.ts`. Future projects should
@@ -18,6 +17,7 @@
  */
 import type { DynamicToolUIPart, ToolUIPart, UIMessage } from 'ai'
 import { getToolName, isReasoningUIPart, isTextUIPart, isToolUIPart } from 'ai'
+import { isPartStreaming, isToolStreaming } from '@nuxt/ui/utils/ai'
 
 const props = withDefaults(defineProps<{
   message: UIMessage
@@ -27,7 +27,6 @@ const props = withDefaults(defineProps<{
 })
 
 type AnyToolPart = ToolUIPart | DynamicToolUIPart
-const TERMINAL_STATES = ['output-available', 'output-error', 'output-denied']
 
 function isAnyToolPart(part: { type: string }): boolean {
   return isToolUIPart(part as ToolUIPart) || part.type.startsWith('tool-')
@@ -35,14 +34,6 @@ function isAnyToolPart(part: { type: string }): boolean {
 
 function asToolPart(part: { type: string }): AnyToolPart {
   return part as AnyToolPart
-}
-
-function isPartStreaming(part: { state?: string }) {
-  return part.state === 'streaming'
-}
-
-function isToolStreaming(part: AnyToolPart) {
-  return !TERMINAL_STATES.includes(part.state)
 }
 
 /**
@@ -99,11 +90,7 @@ function getToolOutputText(part: AnyToolPart) {
   return JSON.stringify(part.output, null, 2)
 }
 
-function isRenderablePart(part: { type: string }) {
-  return part.type !== 'step-start' && part.type !== 'source-url'
-}
-
-const contentParts = computed(() => props.message.parts.filter(isRenderablePart))
+const contentParts = computed(() => getMergedParts(props.message.parts).filter(part => part.type !== 'step-start'))
 
 const toolOpenOverrides = ref<Record<string, boolean>>({})
 
@@ -141,7 +128,12 @@ function onToolToggle(index: number, value: boolean) {
       icon="i-lucide-brain"
       chevron="leading"
       :default-open="!collapsed"
-    />
+    >
+      <ChatComark
+        :value="part.text"
+        :streaming="isPartStreaming(part)"
+      />
+    </UChatReasoning>
 
     <template v-else-if="isAnyToolPart(part)">
       <UChatTool
@@ -162,16 +154,10 @@ function onToolToggle(index: number, value: boolean) {
     </template>
 
     <template v-else-if="isTextUIPart(part)">
-      <UEditor
+      <ChatComark
         v-if="message.role === 'assistant'"
-        :model-value="part.text"
-        content-type="markdown"
-        :editable="false"
-        class="min-h-0 border-0 bg-transparent p-0"
-        :ui="{
-          root: 'border-0 bg-transparent shadow-none ring-0',
-          content: 'px-0 py-0 bg-transparent'
-        }"
+        :value="part.text"
+        :streaming="isPartStreaming(part)"
       />
       <p
         v-else

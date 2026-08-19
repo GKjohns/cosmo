@@ -1,17 +1,23 @@
 import type { UIMessage } from 'ai'
+import { generateText } from 'ai'
+import { appendDemoChatMessages, getDemoChat, setDemoChatTitle } from './demoStore'
 
 /**
- * Chat persistence helpers — Sprint 6.
+ * Chat persistence helpers.
  *
  * Mirrors the util shape from `nuxt-ui-templates/chat` + AIR-Bot's
  * `server/utils/chats.ts`. Cosmo doesn't carry AIR-Bot's legacy
  * `{ role, content }` back-compat path because cosmo never shipped a chat
  * surface that wrote that shape.
  *
- * Schema: `public.chats` (migration 008) stores the full UIMessage[] as
- * `messages jsonb`. The id-diff on message persistence (see
- * `server/api/chats/[id].post.ts`) is the load-bearing detail: full
- * overwrites duplicate parts when the AI SDK re-emits.
+ * Schema: `public.chats` (migration 0008) stores the full UIMessage[] as
+ * `messages jsonb`. The id-diff on message persistence
+ * (`persistChatMessages`) is the load-bearing detail: full overwrites
+ * duplicate parts when the AI SDK re-emits.
+ *
+ * `ChatBackend` is the one seam between demo mode (in-memory `demoStore`)
+ * and the live Supabase path so `api/chats/[id].post.ts` has a single
+ * persist-and-title flow instead of two forks.
  */
 
 type ChatRole = 'user' | 'assistant' | 'system'
@@ -91,4 +97,79 @@ export function normalizeMessages(messages: unknown): UIMessage[] {
 
 export function serializeMessages(messages: UIMessage[]): JsonValue[] {
   return normalizeMessages(messages) as unknown as JsonValue[]
+}
+
+/**
+ * Minimal Supabase-client shape the persistence helpers need. Typed loosely
+ * on purpose — cosmo has no generated `database.types.ts` (clones do; see
+ * `project_bootstrap.md`).
+ */
+export interface ChatBackend {
+  demo: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase?: any
+}
+
+const TITLE_INSTRUCTIONS = `You are a title generator for a chat:
+- Generate a short title based on the first user's message
+- The title should be less than 30 characters long
+- The title should be a summary of the user's message
+- Do not use quotes (' or ") or colons (:) or any other punctuation
+- Do not use markdown, just plain text`
+
+/** Cheapest-model title from the first user message; '' on failure. */
+export async function generateChatTitle(firstMessage: UIMessage): Promise<string> {
+  try {
+    const { text } = await generateText({
+      model: MODELS.titleGen,
+      reasoning: 'minimal',
+      instructions: TITLE_INSTRUCTIONS,
+      prompt: JSON.stringify(firstMessage)
+    })
+    return text.trim()
+  } catch (err) {
+    console.error('[chats] Title generation failed', err)
+    return ''
+  }
+}
+
+export async function persistChatTitle(backend: ChatBackend, id: string, title: string): Promise<void> {
+  if (backend.demo) {
+    setDemoChatTitle(id, title)
+    return
+  }
+  const { error } = await backend.supabase.from('chats').update({ title }).eq('id', id)
+  if (error) console.error(`[chats] Failed to persist title for ${id}`, error)
+}
+
+/**
+ * Append the messages the stream produced that aren't already stored
+ * (id-diff against the latest row, not the request snapshot).
+ */
+export async function persistChatMessages(backend: ChatBackend, id: string, responseMessages: UIMessage[]): Promise<void> {
+  if (backend.demo) {
+    if (getDemoChat(id)) appendDemoChatMessages(id, responseMessages)
+    return
+  }
+
+  const { data: latest } = await backend.supabase
+    .from('chats')
+    .select('id, messages')
+    .eq('id', id)
+    .maybeSingle()
+  if (!latest) return
+
+  const stored = normalizeMessages(latest.messages)
+  const existingIds = new Set(stored.map(m => m.id))
+  const newMessages = responseMessages.filter(m => !existingIds.has(m.id))
+  if (newMessages.length === 0) return
+
+  const { error } = await backend.supabase
+    .from('chats')
+    .update({
+      messages: serializeMessages([...stored, ...newMessages]),
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+  if (error) console.error(`[chats] Failed to persist messages for ${id}`, error)
 }

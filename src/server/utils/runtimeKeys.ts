@@ -21,7 +21,6 @@ interface ResolvedKeys {
   supabaseUrl: string
   supabaseAnonKey: string
   supabaseServiceRoleKey: string
-  openaiApiKey: string
   aiGatewayApiKey: string
   stripeSecretKey: string
   resendApiKey: string
@@ -56,7 +55,6 @@ function readKeys(event?: H3Event): ResolvedKeys {
     supabaseUrl: get('supabaseUrl', 'SUPABASE_URL'),
     supabaseAnonKey: get('supabaseAnonKey', 'SUPABASE_ANON_KEY'),
     supabaseServiceRoleKey: get('supabaseServiceRoleKey', 'SUPABASE_SERVICE_ROLE_KEY'),
-    openaiApiKey: get('openaiApiKey', 'OPENAI_API_KEY'),
     aiGatewayApiKey: get('aiGatewayApiKey', 'AI_GATEWAY_API_KEY'),
     stripeSecretKey: get('stripeSecretKey', 'STRIPE_SECRET_KEY'),
     resendApiKey: get('resendApiKey', 'RESEND_API_KEY'),
@@ -80,14 +78,8 @@ export function isSupabaseConfigured(event?: H3Event): boolean {
   )
 }
 
-/** True when there's any way to call an AI model — gateway or direct OpenAI. */
+/** True when the AI Gateway key is present — the only AI path cosmo ships. */
 export function isAIConfigured(event?: H3Event): boolean {
-  const k = readKeys(event)
-  return Boolean(k.aiGatewayApiKey || k.openaiApiKey)
-}
-
-/** True when the AI Gateway key is present (preferred path in the demo). */
-export function isAIGatewayConfigured(event?: H3Event): boolean {
   return Boolean(readKeys(event).aiGatewayApiKey)
 }
 

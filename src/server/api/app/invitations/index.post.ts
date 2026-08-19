@@ -37,7 +37,6 @@ export default defineEventHandler(async (event) => {
     existingUserId = match?.id ?? null
   } catch {
     // Best-effort; fall through to invitation creation.
-    existingUserId = null
   }
 
   if (existingUserId) {

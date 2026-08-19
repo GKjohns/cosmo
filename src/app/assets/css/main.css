@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss" theme(static);
 @import "@nuxt/ui";
 
 @source "../../../content/**/*";
@@ -11,13 +11,13 @@
  *      — referenced by page-level CSS via `var(--bg)` etc.
  *   2. Nuxt UI 4 surface overrides — every `UButton` / `UCard` /
  *      `UNavigationMenu` inherits.
- *   3. Primary palette — generic slate, scaled for hover/focus/disabled.
- *   4. `.dark` overrides for the same keys.
+ *   3. `.dark` overrides for the same keys.
  *
- * Cosmo defaults to slate (matches `app/app.config.ts`'s `colors.primary`).
- * Projects can swap by editing the `--ui-color-primary-*` block; the brand
- * tokens above stay generic so the chrome doesn't have to change with the
- * accent.
+ * The primary ramp comes from `app/app.config.ts` (`colors.primary: 'slate'`)
+ * via `@import "tailwindcss" theme(static)` — no hard-coded
+ * `--ui-color-primary-*` block, so swapping the accent (or the runtime theme
+ * picker) is a one-word change. The brand tokens stay generic so the chrome
+ * doesn't have to change with the accent.
  *
  * Fonts use the system stack — no Charter (Daylight-specific). Projects that
  * want a serif display face can add it to `--font-display` / `--font-body`
@@ -60,19 +60,6 @@
   --ui-border-muted: var(--rule);
   --ui-border-accented: #D4D4D8;
   --ui-radius: 6px;
-
-  /* Primary palette — slate, scaled for hover/focus/disabled */
-  --ui-color-primary-50:  #F8FAFC;
-  --ui-color-primary-100: #F1F5F9;
-  --ui-color-primary-200: #E2E8F0;
-  --ui-color-primary-300: #CBD5E1;
-  --ui-color-primary-400: #94A3B8;
-  --ui-color-primary-500: #64748B;
-  --ui-color-primary-600: #475569;
-  --ui-color-primary-700: #334155;
-  --ui-color-primary-800: #1E293B;
-  --ui-color-primary-900: #0F172A;
-  --ui-color-primary-950: #020617;
 }
 
 .dark {
@@ -98,13 +85,6 @@
   --ui-border: var(--rule);
   --ui-border-muted: #141416;
   --ui-border-accented: #222225;
-
-  /* Slate palette flipped for dark mode — hover/focus pull lighter, not darker */
-  --ui-color-primary-300: #CBD5E1;
-  --ui-color-primary-400: #94A3B8;
-  --ui-color-primary-500: #64748B;
-  --ui-color-primary-600: #94A3B8;
-  --ui-color-primary-700: #CBD5E1;
 }
 
 body {

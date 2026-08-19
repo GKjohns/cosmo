@@ -18,6 +18,7 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/ui',
     '@nuxt/content',
+    '@comark/nuxt',
     '@nuxtjs/supabase',
     '@vueuse/nuxt'
   ],
@@ -106,8 +107,25 @@ export default defineNuxtConfig({
     fallback: 'light'
   },
 
+  // Content DB on `node:sqlite` (unflagged since Node 22.13; package.json
+  // `engines` pins >=22.19 anyway) — no native `better-sqlite3` build step.
+  content: {
+    experimental: {
+      sqliteConnector: 'native'
+    }
+  },
+
+  // Nuxt UI 4.10: only bundle the components actually used in templates.
+  // (`@nuxt/icon` is pinned to 2.3.1 in package.json: 2.4+ calls
+  // `useRequestFetch().native`, which nitro 2.x doesn't expose, so every icon
+  // outside the client bundle fails to SSR. Unpin once nuxt ships nitro 3.)
+  ui: {
+    experimental: {
+      componentDetection: true
+    }
+  },
+
   runtimeConfig: {
-    openaiApiKey: process.env.OPENAI_API_KEY,
     aiGatewayApiKey: process.env.AI_GATEWAY_API_KEY,
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
@@ -155,6 +173,12 @@ export default defineNuxtConfig({
     '/api/**': { cors: true }
   },
 
+  // Smooth the chat empty-state -> /app/chat/<id> handoff
+  // (`[view-transition-name:chat-prompt]` on the prompt).
+  experimental: {
+    viewTransition: true
+  },
+
   compatibilityDate: '2026-06-30',
 
   // No prerendering by default: `/` must be SSR (a CDN-cached anon landing +
@@ -169,10 +193,29 @@ export default defineNuxtConfig({
     }
   },
 
+  // TipTap / ProseMirror must resolve to a single copy — a duplicated
+  // `prosemirror-model` breaks `UEditor` + `@tiptap/extension-table` with
+  // "Plugin/Fragment" instance errors. Same list as MonumentLabsSite.
   vite: {
+    resolve: {
+      dedupe: [
+        '@tiptap/core',
+        '@tiptap/pm',
+        'prosemirror-state',
+        'prosemirror-model',
+        'prosemirror-view',
+        'prosemirror-transform',
+        'prosemirror-tables'
+      ]
+    },
     optimizeDeps: {
       include: [
-        '@nuxt/ui > prosemirror-state'
+        '@nuxt/ui > prosemirror-state',
+        '@nuxt/ui > prosemirror-model',
+        '@nuxt/ui > prosemirror-view',
+        '@nuxt/ui > prosemirror-transform',
+        '@tiptap/extension-table',
+        'prosemirror-tables'
       ]
     }
   },

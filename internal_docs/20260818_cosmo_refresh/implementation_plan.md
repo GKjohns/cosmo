@@ -136,7 +136,7 @@ cosmo/
 
 ---
 
-### Sprint 2: Dependency refresh + AI SDK v7 + chat/editor rendering [Not Started]
+### Sprint 2: Dependency refresh + AI SDK v7 + chat/editor rendering [Complete]
 **Goal:** Cosmo is on the same major versions as the Nuxt UI templates (`@nuxt/ui` 4.10, `ai@7`, `@ai-sdk/vue@4`, `@nuxt/content` 3.15) and gateway-only; chat renders through Comark with the v7 stream idioms; editor completion and styling match the editor template.
 **Estimated effort:** 4–5 hours
 
@@ -148,13 +148,20 @@ cosmo/
 - 2.5 **Editor parity.** Copy the `ui.editor.slots.base` block (tables + task lists) and `ui.avatar.slots.root` from `tpl_editor/app/app.config.ts` into `src/app/app.config.ts`. Adopt Monument's fuller `vite.resolve.dedupe` + `optimizeDeps.include` TipTap list (`MonumentLabsSite/nuxt-app/nuxt.config.ts` vite block) — cosmo ships `@tiptap/extension-table` + `UEditor`, the same Plugin/Fragment divergence risk. `main.css`: `@import "tailwindcss" theme(static);` and delete the hard-coded `--ui-color-primary-50…950` slate block so the `UserMenu` theme picker works — **or** delete the picker (Sprint 3 deletes the picker; do the CSS change here regardless, it is the template default and the ramp override is only needed for a non-Tailwind brand color, which cosmo does not have).
 - 2.6 Update the file-header comments in the chat pages/route to say "mirrors nuxt-ui-templates/chat as of Aug 2026 (ai@7, useChat, Comark)".
 
+#### Deviations (2026-08-18)
+- `@nuxt/icon` pinned to exactly `2.3.1`: 2.4.x calls `useRequestFetch().native`, which nitro 2.13 (nuxt 4.5.2) doesn't expose → every SSR icon fails (~15 warnings/page). Commented in `nuxt.config.ts`; unpin when nuxt moves to nitro 3.
+- `reasoning: 'minimal'` on the title call and `/api/completion` (gpt-5-nano's default reasoning returned empty "continue" completions under the 25-token budget and pushed chat TTFB to ~4.8 s; now ~1.7 s).
+- `MODEL_PRICING`/`estimateCostUsd`/`isGatewayCreditError` dropped (~90 lines; pointer to Daylight in `aiModels.ts`). Title `.slice(0, 30)` dropped (template doesn't slice).
+- `useEditorCompletion.ts` keeps `onFinish` — it is `useCompletion`'s only callback name in ai@7 (not deprecated; template identical).
+- Versions landed: ai 7.0.68, @ai-sdk/vue 4.0.68, @nuxt/ui 4.10.0, @nuxt/content 3.15.2, @nuxtjs/supabase 2.0.10, tiptap 3.30.2, @comark/nuxt 0.6.2. `ChatIndicator` polish skipped.
+
 #### Verification
-- [ ] `npm ls ai @ai-sdk/vue @nuxt/ui @nuxt/content` shows 7.x / 4.x / 4.10.x / 3.15.x; `npm ls openai @ai-sdk/openai better-sqlite3` all "(empty)".
-- [ ] `grep -rn "safeReasoningOptions\|stepCountIs\|toUIMessageStream()\|onFinish\|new Chat(\|useCsrf\|csrfHeader" src/` returns nothing (deprecated aliases and stubs gone).
-- [ ] typecheck 0, lint 0, `npm run build` green.
-- [ ] Playwright with `AI_GATEWAY_API_KEY` set: `/app/chat` → type "Give me a markdown table of 3 planets and a python snippet" → navigates to `/app/chat/<uuid>`, sidebar title appears **while** the answer streams, table + shiki-highlighted code render via Comark (screenshot `sprint2_chat_comark.webp`); stop button aborts mid-stream (server log shows the abort); reload page → messages hydrate from jsonb. `/app/editor` → type a sentence, trigger AI "continue" → completion is ≤ 1 sentence (screenshot `sprint2_editor_completion.webp`); insert a table and a task list → styled per template.
-- [ ] Zero-env demo boot still green (chat shows the "add AI_GATEWAY_API_KEY" empty state, no 500s); `curl -X POST localhost:3000/api/chats/<demo-id> -H 'content-type: application/json' -d '{"messages":[{"id":"m1","role":"user","parts":[{"type":"text","text":"hi"}]}]}'` → 200 (wire format unchanged).
-- [ ] `npm run build && npm run preview` → `curl localhost:3000/blog` 200 (native sqlite content DB works from `.output`).
+- [x] `npm ls ai @ai-sdk/vue @nuxt/ui @nuxt/content` shows 7.x / 4.x / 4.10.x / 3.15.x; `npm ls openai @ai-sdk/openai better-sqlite3` all "(empty)".
+- [x] `grep -rn "safeReasoningOptions\|stepCountIs\|toUIMessageStream()\|onFinish\|new Chat(\|useCsrf\|csrfHeader" src/` returns nothing except `useCompletion`'s `onFinish` (see deviations).
+- [x] typecheck 0, lint 0, `npm run build` green.
+- [x] Playwright with `AI_GATEWAY_API_KEY` set (headless script; screenshots `sprint2_chat_comark.webp`, `sprint2_editor.webp` — the editor "continue" completion was verified via curl, not screenshotted): `/app/chat` → type "Give me a markdown table of 3 planets and a python snippet" → navigates to `/app/chat/<uuid>`, sidebar title appears **while** the answer streams, table + shiki-highlighted code render via Comark (screenshot `sprint2_chat_comark.webp`); stop button aborts mid-stream (server log shows the abort); reload page → messages hydrate from jsonb. `/app/editor` → type a sentence, trigger AI "continue" → completion is ≤ 1 sentence (screenshot `sprint2_editor_completion.webp`); insert a table and a task list → styled per template.
+- [x] Zero-env demo boot still green (chat shows the "add AI_GATEWAY_API_KEY" empty state, no 500s); `curl -X POST localhost:3000/api/chats/<demo-id> -H 'content-type: application/json' -d '{"messages":[{"id":"m1","role":"user","parts":[{"type":"text","text":"hi"}]}]}'` → 200 (wire format unchanged).
+- [x] `npm run build && npm run preview` → `curl localhost:3000/blog` 200 (native sqlite content DB works from `.output`).
 
 ---
 
