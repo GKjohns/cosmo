@@ -17,6 +17,7 @@ import { serverSupabaseClient } from '#supabase/server'
 import { createTextMessage, normalizeMessages, serializeMessages } from '../utils/chats'
 import { isDemoMode } from '../utils/runtimeKeys'
 import { createDemoChat } from '../utils/demoStore'
+import { logAnalyticsEvent } from '../utils/analytics'
 
 interface ChatRequestBody {
   id?: string
@@ -66,6 +67,9 @@ export default defineEventHandler(async (event) => {
       statusMessage: `Failed to create chat: ${error.message}`
     })
   }
+
+  // The chat id only — the first message is content and never enters the ledger.
+  void logAnalyticsEvent(event, 'chat_created', { chatId }, {}, { actorId: userId })
 
   return data as { id: string, title: string }
 })

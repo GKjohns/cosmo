@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { serverSupabaseClient, serverSupabaseUser, serverSupabaseServiceRole } from '#supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { logAnalyticsEvent } from '../../../utils/analytics'
 
 const schema = z.object({
   // ARIA defaulted to UUIDs; we keep the schema permissive so projects that
@@ -64,6 +65,11 @@ export default defineEventHandler(async (event) => {
       .update({ status: 'accepted' })
       .eq('id', invitation.id)
 
+    void logAnalyticsEvent(event, 'invitation_accepted', {
+      organizationId: invitation.organization_id,
+      alreadyMember: true
+    }, {}, { actorId: userId })
+
     return { organizationId: invitation.organization_id, alreadyMember: true }
   }
 
@@ -83,6 +89,11 @@ export default defineEventHandler(async (event) => {
     .from('invitations')
     .update({ status: 'accepted' })
     .eq('id', invitation.id)
+
+  void logAnalyticsEvent(event, 'invitation_accepted', {
+    organizationId: invitation.organization_id,
+    alreadyMember: false
+  }, {}, { actorId: userId })
 
   return { organizationId: invitation.organization_id, alreadyMember: false }
 })

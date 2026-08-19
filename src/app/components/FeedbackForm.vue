@@ -133,18 +133,8 @@ async function submit() {
     })
 
     submitted.value = true
-
-    logEvent(
-      'feedback_submitted',
-      {
-        isAnonymous: !user.value,
-        hasEmail: !user.value && !!form.email.trim(),
-        hasQ1: !!form.q1_trying_to_do.trim(),
-        hasQ2: !!form.q2_blockers.trim(),
-        hasQ3: !!form.q3_indispensable.trim()
-      },
-      { context: { pageContext: pageContext.value } }
-    )
+    // `feedback_submitted` is fired server-side by /api/feedback once the row
+    // lands — one writer, no double count.
   } catch (caught: unknown) {
     const error = caught as CaughtError
     toast.add({

@@ -8,7 +8,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "check:analytics-events": "node scripts/check-analytics-events.mjs"
   },
   "dependencies": {
     "@ai-sdk/vue": "^4.0.68",

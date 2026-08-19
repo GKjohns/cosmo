@@ -90,6 +90,12 @@ export function useNavigation() {
           active: route.path === '/internal'
         },
         {
+          label: 'Reports',
+          icon: 'i-lucide-file-text',
+          to: '/internal/reports',
+          active: route.path.startsWith('/internal/reports')
+        },
+        {
           label: 'Dev Tools',
           icon: 'i-lucide-wrench',
           to: '/internal/dev-tools',
@@ -148,6 +154,12 @@ export function useNavigation() {
             label: 'Overview',
             icon: 'i-lucide-shield',
             to: '/internal'
+          },
+          {
+            id: '/internal/reports',
+            label: 'Reports',
+            icon: 'i-lucide-file-text',
+            to: '/internal/reports'
           },
           {
             id: '/internal/dev-tools',

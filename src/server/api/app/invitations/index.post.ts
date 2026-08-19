@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { logAnalyticsEvent } from '../../../utils/analytics'
 
 const schema = z.object({
   email: z.string().email(),
@@ -78,6 +79,12 @@ export default defineEventHandler(async (event) => {
       .eq('email', email)
       .eq('status', 'pending')
 
+    void logAnalyticsEvent(event, 'invitation_sent', {
+      organizationId: callerMembership.organizationId,
+      role: body.role,
+      mode: 'auto_added'
+    }, {}, { actorId: userId })
+
     return { mode: 'auto_added' as const, email }
   }
 
@@ -98,6 +105,12 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
+
+  void logAnalyticsEvent(event, 'invitation_sent', {
+    organizationId: callerMembership.organizationId,
+    role: body.role,
+    mode: 'invited'
+  }, {}, { actorId: userId })
 
   return { mode: 'invited' as const, invitation }
 })

@@ -1,8 +1,22 @@
--- Cosmo — Migration 002: Multi-tenancy hardening
+-- 0002_orgs_and_invitations.sql
+-- Cosmo — multi-tenancy hardening: profile flags, org-scoped RLS, invitations.
+--
+-- APPLIED TO: <project ref> on <date>   -- fill in when this lands in a clone
+--
+-- Applied through the Supabase MCP (`apply_migration`). Every statement is
+-- guarded (`if not exists`, `drop policy if exists` before `create policy`), so
+-- re-running this file is a no-op — nothing here is destructive to existing
+-- rows.
+--
+-- Pre-flight: nothing to substitute. Run as-is.
 --
 -- Adds the columns and RLS that ARIA-style org/team flows expect on top of the
--- shape from `001_initial.sql`. Idempotent: safe to re-run on a project that
--- already ran 001.
+-- shape from `0001_initial.sql`. Same hygiene rules as 0001: SECURITY DEFINER
+-- functions run with `search_path = ''` and schema-qualify everything,
+-- policies use `(select auth.uid())`, and the grants at the end state exactly
+-- which verbs `authenticated` gets on each table (0001 revoked the rest).
+
+begin;
 
 -- ----------------------------------------------------------------------------
 -- 1. Profile columns Sprint 2+ relies on.
@@ -63,13 +77,13 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select exists (
     select 1
     from public.memberships m
     where m.organization_id = target_organization_id
-      and m.user_id = auth.uid()
+      and m.user_id = (select auth.uid())
       and m.role = 'admin'
   )
 $$;
@@ -87,13 +101,13 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select exists (
     select 1
     from public.memberships m
     where m.organization_id = target_organization_id
-      and m.user_id = auth.uid()
+      and m.user_id = (select auth.uid())
   )
 $$;
 
@@ -182,7 +196,7 @@ on public.invitations
 for select
 to authenticated
 using (
-  lower(email) = lower(auth.jwt() ->> 'email')
+  lower(email) = lower((select auth.jwt()) ->> 'email')
   and status = 'pending'
 );
 
@@ -193,7 +207,7 @@ for insert
 to authenticated
 with check (
   public.is_org_admin(organization_id)
-  and invited_by = auth.uid()
+  and invited_by = (select auth.uid())
 );
 
 drop policy if exists "invitations_update_for_admins" on public.invitations;
@@ -224,29 +238,53 @@ create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   derived_display_name text;
 begin
-  derived_display_name := coalesce(
-    new.raw_user_meta_data ->> 'display_name',
-    new.raw_user_meta_data ->> 'full_name',
-    new.raw_user_meta_data ->> 'name',
-    nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
-    'Team member'
-  );
+  begin
+    derived_display_name := coalesce(
+      new.raw_user_meta_data ->> 'display_name',
+      new.raw_user_meta_data ->> 'full_name',
+      new.raw_user_meta_data ->> 'name',
+      nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
+      'Team member'
+    );
 
-  insert into public.profiles (id, display_name, avatar_url)
-  values (
-    new.id,
-    derived_display_name,
-    new.raw_user_meta_data ->> 'avatar_url'
-  )
-  on conflict (id) do update
-  set display_name = excluded.display_name,
-      avatar_url = coalesce(excluded.avatar_url, public.profiles.avatar_url);
+    insert into public.profiles (id, display_name, avatar_url)
+    values (
+      new.id,
+      derived_display_name,
+      new.raw_user_meta_data ->> 'avatar_url'
+    )
+    on conflict (id) do update
+    set display_name = excluded.display_name,
+        avatar_url = coalesce(excluded.avatar_url, public.profiles.avatar_url);
+  exception
+    when others then
+      -- Never break signup: a missing/partial profile row is the safe default.
+      return new;
+  end;
 
   return new;
 end;
 $$;
+
+grant execute on function public.handle_new_user() to supabase_auth_admin;
+
+-- ----------------------------------------------------------------------------
+-- 7. Grants for the verbs the policies above opened up.
+--
+-- 0001 left `authenticated` with SELECT only on memberships and organizations;
+-- the admin policies in section 5 need INSERT/UPDATE/DELETE to be reachable.
+-- Every write is still gated by the policy — the grant just stops being the
+-- silent second lock. `is_org_admin`/`is_org_member` are the only functions
+-- clients call directly; the trigger runs as supabase_auth_admin.
+-- ----------------------------------------------------------------------------
+
+grant select, insert, update, delete on public.memberships to authenticated;
+grant select, insert, update on public.organizations to authenticated;
+revoke all on public.memberships, public.organizations from anon;
+
+commit;

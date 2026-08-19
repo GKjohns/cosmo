@@ -13,9 +13,10 @@
  * with status='failed' so we can audit later. Email is not on the critical
  * path of any user-facing request.
  *
- * Hard gate: outside NODE_ENV=production, sendEmail/sendAlertEmail no-op
- * unless RESEND_ALLOW_SEND=1. Dev .env should NOT have that var set; prod
- * env should. This is the most important guard in the file.
+ * Hard gate: outside VERCEL_ENV=production (falling back to NODE_ENV only when
+ * VERCEL_ENV is unset), sendEmail/sendAlertEmail no-op unless
+ * RESEND_ALLOW_SEND=1. Dev .env should NOT have that var set. This is the most
+ * important guard in the file — see `envAllowsSend()`.
  *
  * Brand tokens (from address, alert recipient, retention floor) are read from
  * useRuntimeConfig() so projects parameterize via nuxt.config.ts / .env.
@@ -24,6 +25,7 @@
 import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from './worker-client'
+import { analyticsEnv } from './analyticsEnv'
 
 // Default (`any`-schema) client — projects without generated types still compile.
 type AnyClient = SupabaseClient
@@ -192,7 +194,15 @@ export interface SendAlertEmailOptions {
   body: string
 }
 
+/**
+ * The send gate, keyed off `VERCEL_ENV` (via `analyticsEnv()`), NOT
+ * `NODE_ENV`: a Vercel *preview* deploy runs with `NODE_ENV=production`, so
+ * the old `NODE_ENV` check let preview branches mail real users. Only when
+ * `VERCEL_ENV` is unset (local dev, non-Vercel hosts) do `NODE_ENV` and
+ * `RESEND_ALLOW_SEND=1` get a say.
+ */
 function envAllowsSend(): boolean {
+  if (process.env.VERCEL_ENV) return analyticsEnv() === 'production'
   return process.env.NODE_ENV === 'production' || RUNTIME_CONFIG().allowSend
 }
 
@@ -282,7 +292,7 @@ async function updateSendRow(
  *
  * Order of operations:
  *   1. Short-circuit on missing Resend config.
- *   2. Short-circuit on dev-gate (NODE_ENV !== 'production' AND no RESEND_ALLOW_SEND).
+ *   2. Short-circuit on dev-gate (`envAllowsSend()` false).
  *   3. Read auth.users.email + profiles row; skip if employee / no email.
  *   4. Try-insert email_sends row; if unique violation, return early.
  *   5. Send via Resend; on success patch the row with the message id, on

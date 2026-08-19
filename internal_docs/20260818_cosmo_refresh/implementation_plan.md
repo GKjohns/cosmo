@@ -195,7 +195,7 @@ cosmo/
 
 ---
 
-### Sprint 4: Analytics + error capture + `/internal` overview + reports [Not Started]
+### Sprint 4: Analytics + error capture + `/internal` overview + reports [Complete]
 **Goal:** Cosmo's analytics ledger is Camera Shy's (anon/visit stitching, service-role-only writes, `real_events`, typed registry, live `page_viewed`), 5xx errors land in `analytics.app_errors`, `/internal` shows an overview computed in SQL, and `/internal/reports` renders `analytics.internal_reports` so `/report` works on day one of every clone.
 **Estimated effort:** 6–7 hours
 
@@ -207,13 +207,19 @@ cosmo/
 - 4.5 **`/internal` overview.** Replace the Sprint 3 stub `src/app/pages/internal/index.vue` with Camera Shy's `app/pages/internal/index.vue` (v-if-guarded bands) and `server/api/internal/overview.get.ts` ("a pipe, not a calculator": calls `analytics.internal_overview(p_days)`, returns `unavailable` payload if the RPC is missing or in demo mode — the page renders empty bands with a "connect Supabase" note). (`admin/stats.get.ts` was deleted in Sprint 3.) No new status endpoint — `dev-tools.vue` already has Connectivity + Environment tabs over `/api/health`.
 - 4.6 **Reports viewer.** Copy `camera_shy/src/app/pages/internal/reports/{index,[id]}.vue`, `app/components/ReportsChartBlock.vue`, `server/api/internal/reports/{index.get,[id].get}.ts` (fresh regex per render for the ```chart split — module-scope `/g` regex drops the first chart). `[Internal]` nav: Overview, Reports, Dev tools. Demo mode returns an empty list.
 
+#### Deviations (2026-08-19)
+- No scratch Supabase project: the MCP quoted $10/month for a new project in the Monument Labs org (no free slot) and Docker is not available for `supabase start`, so all SQL is **static-checked only**. First real clone applies `0001`–`0011` and runs `get_advisors`.
+- `ReportsChartBlock.vue` is Camera Shy's hand-drawn SVG — no chart lib added.
+- `generate-digest.ts` got a minimal `onFailure` → `logWorkerAnalyticsEvent('digest_failed')` so the registry entry has a call site (Sprint 6 fleshes it out). Stripe `subscription_activated`/`subscription_plan_changed` collapsed into `subscription_updated` with `stripeEventType` in the payload. Client-side duplicate `feedback_submitted` in `FeedbackForm.vue` removed (server fires it).
+- `internal_overview` funnel step 4 (`subscription_created`) is a row count — webhook events have no actor.
+
 #### Verification
-- [ ] `psql`-free static check: `grep -n "pgrst.db_schemas" db_migrations/0004_analytics.sql` shows `'public, graphql_public, analytics'`; `grep -c "search_path = ''" db_migrations/000{1,2,4}_*.sql` > 0 each; `grep -rn "feedback_received\|fullPath" src/app/composables/useAnalytics.ts src/server` → nothing.
+- [x] `psql`-free static check: `grep -n "pgrst.db_schemas" db_migrations/0004_analytics.sql` shows `'public, graphql_public, analytics'`; `grep -c "search_path = ''" db_migrations/000{1,2,4}_*.sql` > 0 each; `grep -rn "feedback_received\|fullPath" src/app/composables/useAnalytics.ts src/server` → nothing.
 - [ ] `grep -rn "logEvent(\|logAnalyticsEvent(" src/ | grep -v "EVENTS\|analytics-events"` — every call site passes a registry key (typecheck enforces; this grep is the eyeball).
-- [ ] Zero-env dev: navigate `/` → `/pricing` → `/app` → `/app/chat`; server log shows `page_viewed` dev-warn-free no-ops (demo mode) and no 500s; `curl -X POST localhost:3000/api/analytics -H 'content-type: application/json' -d '{"event_type":"page_viewed","payload":{}}'` → `{ "success": true }` and sets a `cosmo_anon` cookie; an unregistered-but-well-formed name (`"nope"`) → 200 + a dev-warn in the server log; a malformed name (`"Not Valid!"`) → 400 (Camera Shy semantics: never reject a real client over a registry miss).
-- [ ] `/internal` renders the overview bands empty with the connect note (screenshot `sprint4_internal_overview.webp`); `/internal/reports` renders the empty list (screenshot `sprint4_internal_reports.webp`); throw a test 500 (temporarily add `throw createError({ statusCode: 500 })` to `/api/health`, curl it, then revert) → server log shows the error-capture plugin ran and no-op'd in demo mode.
-- [ ] Optional if Kyle points a scratch Supabase project at it: apply `0001`–`0010` in order via MCP, `get_advisors` → no ERROR-level findings; `select analytics.internal_overview(7)` returns jsonb; `select * from analytics.real_events limit 1` works.
-- [ ] typecheck 0, lint 0, build green.
+- [x] Zero-env dev: navigate `/` → `/pricing` → `/app` → `/app/chat`; server log shows `page_viewed` dev-warn-free no-ops (demo mode) and no 500s; `curl -X POST localhost:3000/api/analytics -H 'content-type: application/json' -d '{"event_type":"page_viewed","payload":{}}'` → `{ "success": true }` and sets a `cosmo_anon` cookie; an unregistered-but-well-formed name (`"nope"`) → 200 + a dev-warn in the server log; a malformed name (`"Not Valid!"`) → 400 (Camera Shy semantics: never reject a real client over a registry miss).
+- [x] `/internal` renders the overview bands empty with the connect note (screenshot `sprint4_internal_overview.webp`); `/internal/reports` renders the empty list (screenshot `sprint4_internal_reports.webp`); throw a test 500 (temporarily add `throw createError({ statusCode: 500 })` to `/api/health`, curl it, then revert) → server log shows the error-capture plugin ran and no-op'd in demo mode.
+- [ ] (skipped — no scratch project, see deviations) Optional if Kyle points a scratch Supabase project at it: apply `0001`–`0010` in order via MCP, `get_advisors` → no ERROR-level findings; `select analytics.internal_overview(7)` returns jsonb; `select * from analytics.real_events limit 1` works.
+- [x] typecheck 0, lint 0, build green.
 
 ---
 

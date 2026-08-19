@@ -22,7 +22,15 @@ export const generateDigest = inngest.createFunction(
       { event: 'cosmo/digest.requested' }
     ],
     concurrency: [{ limit: 1 }],
-    debounce: { period: '2m' }
+    debounce: { period: '2m' },
+    // Fires after the last retry. Analytics only for now — Sprint 6 adds the
+    // operator alert email and the rest of Daylight's worker conventions.
+    onFailure: async ({ event, error }) => {
+      await logWorkerAnalyticsEvent('digest_failed', null, {
+        runId: event.data.run_id,
+        error_kind: error.name
+      })
+    }
   },
   async ({ event, step }) => {
     // Demo mode (no Supabase env): nothing to digest, and a client built

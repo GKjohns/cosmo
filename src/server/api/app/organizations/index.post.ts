@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { logAnalyticsEvent } from '../../../utils/analytics'
 
 const schema = z.object({
   name: z.string().min(2).max(100)
@@ -56,6 +57,8 @@ export default defineEventHandler(async (event) => {
   if (memberError) {
     throw createError({ statusCode: 500, statusMessage: memberError.message })
   }
+
+  void logAnalyticsEvent(event, 'org_created', { organizationId: org.id }, {}, { actorId: userId })
 
   return { organization: org }
 })

@@ -120,14 +120,14 @@ async function handleCheckoutCompleted(
     cancel_at_period_end: subscription.cancel_at_period_end
   }, { onConflict: 'organization_id' })
 
-  logAnalyticsEvent(event, 'subscription_created', {
+  void logAnalyticsEvent(event, 'subscription_created', {
     organizationId,
     stripeSubscriptionId: subscription.id,
     priceId: subscription.items.data[0]?.price.id
   }, {
     stripeEventType,
     stripeObjectId: subscription.id
-  }, { serviceRole: true, actorId: null })
+  }, { actorId: null })
 }
 
 async function handleSubscriptionUpdate(
@@ -164,19 +164,19 @@ async function handleSubscriptionUpdate(
     stripe_price_id: subscription.items.data[0]?.price.id
   }).eq('stripe_subscription_id', subscription.id)
 
-  const eventType = stripeEventType === 'customer.subscription.created'
-    ? 'subscription_activated'
-    : 'subscription_plan_changed'
-
-  logAnalyticsEvent(event, eventType, {
+  // One registry event for both `customer.subscription.created` (activation)
+  // and `.updated` (plan change / status flip); `stripeEventType` in the
+  // payload keeps them separable in SQL.
+  void logAnalyticsEvent(event, 'subscription_updated', {
     organizationId,
     previousStatus: existing?.status ?? null,
     newStatus: subscription.status,
-    stripeSubscriptionId: subscription.id
+    stripeSubscriptionId: subscription.id,
+    stripeEventType
   }, {
     stripeEventType,
     stripeObjectId: subscription.id
-  }, { serviceRole: true, actorId: null })
+  }, { actorId: null })
 }
 
 async function handleSubscriptionDeleted(
@@ -194,14 +194,14 @@ async function handleSubscriptionDeleted(
   await supabase.from('subscriptions').update({ status: 'canceled' })
     .eq('stripe_subscription_id', subscription.id)
 
-  logAnalyticsEvent(event, 'subscription_canceled', {
+  void logAnalyticsEvent(event, 'subscription_canceled', {
     organizationId: existing?.organization_id ?? null,
     stripeSubscriptionId: subscription.id,
     cancelAtPeriodEnd: subscription.cancel_at_period_end
   }, {
     stripeEventType,
     stripeObjectId: subscription.id
-  }, { serviceRole: true, actorId: null })
+  }, { actorId: null })
 }
 
 async function handlePaymentFailed(
@@ -222,7 +222,7 @@ async function handlePaymentFailed(
   await supabase.from('subscriptions').update({ status: 'past_due' })
     .eq('stripe_subscription_id', subscriptionId)
 
-  logAnalyticsEvent(event, 'invoice_payment_failed', {
+  void logAnalyticsEvent(event, 'invoice_payment_failed', {
     organizationId: existing?.organization_id ?? null,
     stripeSubscriptionId: subscriptionId,
     amountDue: invoice.amount_due ?? null,
@@ -230,5 +230,5 @@ async function handlePaymentFailed(
   }, {
     stripeEventType,
     stripeObjectId: invoice.id
-  }, { serviceRole: true, actorId: null })
+  }, { actorId: null })
 }

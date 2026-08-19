@@ -75,7 +75,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: 'Failed to submit feedback' })
   }
 
-  logAnalyticsEvent(event, 'feedback_received', {
+  // Fire-and-forget: the row is committed; the ledger write never delays the
+  // response. `logAnalyticsEvent` swallows its own errors.
+  void logAnalyticsEvent(event, 'feedback_submitted', {
     feedbackId: data.id,
     isAuthenticated: !!userId,
     hasEmail: !userId && !!email,
@@ -85,7 +87,7 @@ export default defineEventHandler(async (event) => {
       q2 ? 'q2' : null,
       q3 ? 'q3' : null
     ].filter(Boolean)
-  })
+  }, {}, { actorId: userId })
 
   return { success: true, id: data.id }
 })

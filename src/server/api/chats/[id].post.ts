@@ -39,6 +39,7 @@ import { createAITools } from '../../utils/ai-tools'
 import { isAIConfigured, isDemoMode } from '../../utils/runtimeKeys'
 import { getDemoChat } from '../../utils/demoStore'
 import { isRegisteredModel } from '../../utils/aiModels'
+import { logAnalyticsEventDetached } from '../../utils/analytics'
 
 const bodySchema = z.object({
   id: z.string().optional(),
@@ -174,7 +175,16 @@ export default defineEventHandler(async (event) => {
         sendSources: true
       }))
     },
-    onEnd: ({ messages: responseMessages }) => persistChatMessages(backend, id, responseMessages),
+    onEnd: ({ messages: responseMessages }) => {
+      // Detached (`event.waitUntil`): the ledger write must not sit between
+      // the last token and the stream close. Counts only, never content.
+      logAnalyticsEventDetached(event, 'chat_message_sent', {
+        chatId: id,
+        model,
+        message_count: responseMessages.length
+      })
+      return persistChatMessages(backend, id, responseMessages)
+    },
     onError: error => error instanceof Error ? error.message : 'Failed to stream AI response.'
   })
 
