@@ -18,13 +18,13 @@
  */
 export const MODELS = {
   /** Streaming chat surface — interactive UI, reasoning + tool calls. */
-  chat: 'anthropic/claude-sonnet-4.6',
+  chat: 'anthropic/claude-sonnet-5.5',
   /** Short / latency-sensitive completions (editor inline AI, digests). */
-  fast: 'openai/gpt-5-nano',
+  fast: 'openai/gpt-6-luna',
   /** Title generation before the first stream; cheapest viable model. */
-  titleGen: 'openai/gpt-5-nano',
+  titleGen: 'openai/gpt-6-luna',
   /** Default for structured / heavy reasoning workers. */
-  reasoning: 'openai/gpt-5'
+  reasoning: 'openai/gpt-6-sol'
 } as const
 
 export type ModelKey = keyof typeof MODELS
